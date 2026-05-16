@@ -6,7 +6,9 @@ import {
   IconDashboard,
   IconFileDescription,
   IconInnerShadowTop,
+  IconPackage,
   IconSettings,
+  IconTool,
   IconUsers,
 } from "@tabler/icons-react";
 
@@ -43,8 +45,18 @@ const data = {
     },
     {
       title: "Team",
-      url: "#",
+      url: "/team",
       icon: IconUsers,
+    },
+    {
+      title: "Services",
+      url: "/services",
+      icon: IconTool,
+    },
+    {
+      title: "Materials",
+      url: "/materials",
+      icon: IconPackage,
     },
   ],
   navSecondary: [
