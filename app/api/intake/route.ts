@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
+import { processTemplate } from "@/lib/google-docs";
+import { uploadPdfToCloudinary } from "@/lib/cloudinary-pdf";
+import { buildReplacements } from "@/lib/pdf-replacements";
+
+const TEMPLATE_ID = "18YVyatLxFeQf_moBqdTJx4jly9nvYrJFXi2vHG9uR7Q";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,10 +28,16 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await collection.insertOne(record);
+    const jobId = result.insertedId.toString();
+
+    // Generate PDF in background (don't block the response)
+    generateAndStorePdf(body, jobId, collection).catch((err) =>
+      console.error("[PDF Background] Failed:", err.message)
+    );
 
     return NextResponse.json({
       success: true,
-      id: result.insertedId.toString(),
+      id: jobId,
       message: "Work order submitted successfully",
     });
   } catch (error) {
@@ -36,4 +47,27 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateAndStorePdf(data: Record<string, any>, jobId: string, collection: any) {
+  const replacements = buildReplacements(data);
+  const ro = data.ro || "WO";
+
+  const pdfBuffer = await processTemplate(
+    TEMPLATE_ID,
+    `T_${Date.now()}`,
+    replacements
+  );
+
+  const pdfUrl = await uploadPdfToCloudinary(pdfBuffer, `NCB-${ro}-${jobId}`);
+
+  // Store the PDF URL on the job document
+  const { ObjectId } = await import("mongodb");
+  await collection.updateOne(
+    { _id: new ObjectId(jobId) },
+    { $set: { jobOrderPdf: pdfUrl } }
+  );
+
+  console.log(`[PDF] Generated & stored for job ${jobId}: ${pdfUrl}`);
 }

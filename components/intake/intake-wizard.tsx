@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Pencil, FileText, Download, Lock } from "lucide-react";
 import { Step1CustomerVehicle } from "./steps/step1-customer-vehicle";
 import { Step2ServiceSelection } from "./steps/step2-service-selection";
 import { Step3PPF } from "./steps/step3-ppf";
@@ -28,19 +29,32 @@ const STEP_TITLES = [
   "Review + Drop-Off Signature",
 ];
 
-export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title: string) => void }) {
+interface IntakeWizardProps {
+  onStepTitleChange?: (title: string) => void;
+  /** Pre-fill data for viewing/editing an existing job */
+  initialData?: IntakeData;
+  /** Existing job ID for update mode */
+  jobId?: string;
+  /** Start in read-only mode */
+  readOnly?: boolean;
+}
+
+export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: initialReadOnly = false }: IntakeWizardProps) {
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<IntakeData>({});
+  const [data, setData] = useState<IntakeData>(initialData || {});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [readOnly, setReadOnly] = useState(initialReadOnly);
+  const isEditMode = !!jobId;
 
   useEffect(() => {
     onStepTitleChange?.(STEP_TITLES[step - 1]);
   }, [step, onStepTitleChange]);
 
   const update = (fields: Record<string, unknown>) => {
+    if (readOnly) return; // block updates in read-only
     setData((prev) => ({ ...prev, ...fields }));
   };
 
@@ -50,38 +64,29 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch("/api/intake", {
-        method: "POST",
+      const url = isEditMode ? `/api/jobs/${jobId}` : "/api/intake";
+      const method = isEditMode ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       const result = await res.json();
       if (res.ok) {
-        toast.success("Work Order Submitted", {
-          description: `RO ${data.ro || "—"} has been saved successfully.`,
+        toast.success(isEditMode ? "Work Order Updated" : "Work Order Submitted", {
+          description: `RO ${data.ro || "—"} has been saved successfully.${result.changes ? ` ${result.changes} field(s) updated.` : ""}`,
           duration: 6000,
         });
         setSubmitted(true);
-        // Trigger PDF generation
-        setGeneratingPdf(true);
-        try {
-          const pdfRes = await fetch("/api/intake/pdf", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: result.id, ...data }),
-          });
-          const pdfResult = await pdfRes.json();
-          if (pdfRes.ok && pdfResult.url) {
-            setPdfUrl(pdfResult.url);
-          }
-        } catch {
-          // PDF generation can fail silently — user can retry
-        } finally {
-          setGeneratingPdf(false);
+        if (isEditMode) {
+          setReadOnly(true); // go back to read-only after save
         }
+        // Auto-trigger PDF generation after submit
+        generatePdf();
       } else {
         toast.error("Submission Failed", {
-          description: result.error || "Could not save work order. Please try again.",
+          description: result.error || result.message || "Could not save work order. Please try again.",
           duration: 5000,
         });
       }
@@ -92,6 +97,26 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const generatePdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      const pdfRes = await fetch("/api/intake/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (pdfRes.ok && pdfRes.headers.get("content-type")?.includes("pdf")) {
+        const blob = await pdfRes.blob();
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+      }
+    } catch {
+      toast.error("PDF generation failed. You can retry.");
+    } finally {
+      setGeneratingPdf(false);
     }
   };
 
@@ -137,8 +162,8 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
                     className={`ncb-progress-circle ${
                       n === step ? "ncb-progress-circle--active" : n < step ? "ncb-progress-circle--done" : ""
                     }`}
-                    onClick={() => n < step && setStep(n)}
-                    style={{ cursor: n < step ? "pointer" : "default" }}
+                    onClick={() => setStep(n)}
+                    style={{ cursor: "pointer" }}
                   >
                     {n}
                   </div>
@@ -147,37 +172,63 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
             })}
           </div>
 
-          {step < 10 ? (
-            <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
-              Next →
-            </button>
-          ) : submitted ? (
-            generatingPdf ? (
-              <button className="ncb-btn-submit" disabled style={{ minWidth: 120, opacity: 0.7 }}>
-                <span className="ncb-spinner-inline" /> Generating PDF…
+          <div className="flex items-center gap-2" style={{ minWidth: 200, justifyContent: "flex-end" }}>
+            {/* Read-only toggle for edit mode */}
+            {isEditMode && readOnly && (
+              <button
+                className="ncb-btn-continue"
+                onClick={() => { setReadOnly(false); setSubmitted(false); }}
+                style={{ minWidth: 90 }}
+              >
+                <Pencil className="size-3.5" /> Edit
               </button>
-            ) : pdfUrl ? (
-              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ncb-btn-continue" style={{ minWidth: 120, textDecoration: "none", textAlign: "center" }}>
-                📄 Download PDF
-              </a>
-            ) : (
-              <button className="ncb-btn-continue" onClick={() => { setGeneratingPdf(true); handleSubmit(); }} style={{ minWidth: 120 }}>
-                📄 Generate PDF
+            )}
+
+            {/* Navigation / Submit */}
+            {step < 10 ? (
+              <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
+                Next →
               </button>
-            )
-          ) : (
-            <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
-              {submitting ? "Submitting..." : "Submit →"}
-            </button>
-          )}
+            ) : !readOnly && (
+              submitted ? (
+                generatingPdf ? (
+                  <button className="ncb-btn-submit" disabled style={{ minWidth: 120, opacity: 0.7 }}>
+                    <span className="ncb-spinner-inline" /> Generating PDF…
+                  </button>
+                ) : pdfUrl ? (
+                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ncb-btn-continue" style={{ minWidth: 120, textDecoration: "none", textAlign: "center" }}>
+                    <Download className="size-3.5" /> Download PDF
+                  </a>
+                ) : (
+                  <button className="ncb-btn-continue" onClick={() => generatePdf()} style={{ minWidth: 120 }}>
+                    <FileText className="size-3.5" /> Generate PDF
+                  </button>
+                )
+              ) : (
+                <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
+                  {submitting ? "Saving..." : isEditMode ? "Save Changes →" : "Submit →"}
+                </button>
+              )
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Read-only banner */}
+      {readOnly && (
+        <div style={{
+          background: "#fef3cd", borderBottom: "1px solid #ffc107",
+          padding: "6px 16px", fontSize: "0.8rem", color: "#856404",
+          display: "flex", alignItems: "center", gap: 8, justifyContent: "center",
+        }}>
+          <Lock className="size-3.5" /> Viewing in read-only mode. Click <strong>Edit</strong> to make changes.
+        </div>
+      )}
+
       {/* Scrollable step content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+      <div className={`flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 ${readOnly ? "pointer-events-none opacity-80" : ""}`}>
         {renderStep()}
       </div>
     </div>
   );
 }
-

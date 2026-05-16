@@ -1,5 +1,6 @@
 "use client";
 import { IntakeData } from "../intake-wizard";
+import { Lightbulb, Smartphone, Wrench, MessageSquare, DollarSign } from "lucide-react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -13,7 +14,7 @@ export function Step6AddOns({ data, update }: Props) {
       {/* Tinted Lights */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">💡</div>
+          <div className="ncb-card-icon"><Lightbulb className="size-4" /></div>
           <div className="ncb-card-title">TINTED LIGHTS</div>
         </div>
         <div className="ncb-form-grid ncb-form-grid--2">
@@ -22,7 +23,7 @@ export function Step6AddOns({ data, update }: Props) {
             <div className="ncb-radio-cards">
               {["50%","35%","25%"].map((s) => (
                 <div key={s} className={`ncb-radio-card ${v("lightFront")===s?"ncb-radio-card--selected":""}`} onClick={()=>update({lightFront:s})}>
-                  <input type="radio" checked={v("lightFront")===s} readOnly style={{accentColor:"#E8601C"}} /> {s}
+                  <input type="radio" checked={v("lightFront")===s} readOnly style={{accentColor:"#E77000"}} /> {s}
                 </div>
               ))}
             </div>
@@ -32,7 +33,7 @@ export function Step6AddOns({ data, update }: Props) {
             <div className="ncb-radio-cards">
               {["50%","35%","25%"].map((s) => (
                 <div key={s} className={`ncb-radio-card ${v("lightRear")===s?"ncb-radio-card--selected":""}`} onClick={()=>update({lightRear:s})}>
-                  <input type="radio" checked={v("lightRear")===s} readOnly style={{accentColor:"#E8601C"}} /> {s}
+                  <input type="radio" checked={v("lightRear")===s} readOnly style={{accentColor:"#E77000"}} /> {s}
                 </div>
               ))}
             </div>
@@ -53,14 +54,14 @@ export function Step6AddOns({ data, update }: Props) {
       {/* Screen Protector */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">📱</div>
+          <div className="ncb-card-icon"><Smartphone className="size-4" /></div>
           <div className="ncb-card-title">SCREEN PROTECTOR</div>
         </div>
         <div style={{display:"flex",gap:"1rem",alignItems:"end",flexWrap:"wrap"}}>
           <div className="ncb-radio-cards" style={{flex:1}}>
             {["Satin","Gloss"].map((s) => (
               <div key={s} className={`ncb-radio-card ${v("screenType")===s?"ncb-radio-card--selected":""}`} onClick={()=>update({screenType:s})}>
-                <input type="radio" checked={v("screenType")===s} readOnly style={{accentColor:"#E8601C"}} /> {s}
+                <input type="radio" checked={v("screenType")===s} readOnly style={{accentColor:"#E77000"}} /> {s}
               </div>
             ))}
           </div>
@@ -74,12 +75,12 @@ export function Step6AddOns({ data, update }: Props) {
       {/* Remove PPF */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🔧</div>
+          <div className="ncb-card-icon"><Wrench className="size-4" /></div>
           <div className="ncb-card-title">REMOVE PPF</div>
         </div>
         <div style={{display:"flex",gap:"1rem",alignItems:"end",flexWrap:"wrap"}}>
           <label className="ncb-check-item" style={{cursor:"pointer"}}>
-            <input type="checkbox" checked={data.removePpf===true} onChange={()=>update({removePpf:!data.removePpf})} style={{accentColor:"#E8601C"}} />
+            <input type="checkbox" checked={data.removePpf===true} onChange={()=>update({removePpf:!data.removePpf})} style={{accentColor:"#E77000"}} />
             Yes, remove existing PPF
           </label>
           <div className="ncb-field" style={{flex:1}}>
@@ -96,7 +97,7 @@ export function Step6AddOns({ data, update }: Props) {
       {/* Additional Requests */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">💬</div>
+          <div className="ncb-card-icon"><MessageSquare className="size-4" /></div>
           <div className="ncb-card-title">ADDITIONAL REQUESTS / SPECIAL INSTRUCTIONS</div>
         </div>
         <textarea className="ncb-textarea" placeholder="Add any special requests or additional instructions..." value={v("addRequests")} onChange={set("addRequests")} maxLength={200} />
@@ -106,7 +107,7 @@ export function Step6AddOns({ data, update }: Props) {
       {/* Total */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">💲</div>
+          <div className="ncb-card-icon"><DollarSign className="size-4" /></div>
           <div>
             <div className="ncb-card-title">TOTAL ADD-ONS</div>
             <div className="ncb-card-subtitle">Total price for all add-ons selected</div>

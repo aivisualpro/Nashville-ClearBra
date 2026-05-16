@@ -2,6 +2,7 @@
 import * as React from "react";
 import { IntakeData } from "../intake-wizard";
 import { OptionSelect } from "@/components/ui/option-select";
+import { ClipboardList, User, Car } from "lucide-react";
 
 const VEHICLE_YEARS = ["2027","2026","2025","2024","2023","2022","2021","2020","2019","2018","2017","2016","2015","2014","2013","2012","2011","2010","2009","2008","2007","2006","2005","2004","2003","2002","2001","2000","1999","1998","1997","1996","1995","1994","1993","1992","1991","1990","1989","1988","1987","1986","1985","1984","1983","1982","1981","1980","1979","1978","1977","1976","1975","1974","1973","1972","1971","1970"];
 
@@ -69,7 +70,7 @@ export function Step1CustomerVehicle({ data, update }: Props) {
       {/* Work Order Details */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">📋</div>
+          <div className="ncb-card-icon"><ClipboardList className="size-4" /></div>
           <div className="ncb-card-title">WORK ORDER DETAILS</div>
         </div>
         <div className="ncb-form-grid ncb-form-grid--4">
@@ -131,7 +132,7 @@ export function Step1CustomerVehicle({ data, update }: Props) {
       {/* Client Information */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">👤</div>
+          <div className="ncb-card-icon"><User className="size-4" /></div>
           <div className="ncb-card-title">CLIENT INFORMATION</div>
         </div>
         <div className="ncb-form-grid ncb-form-grid--3">
@@ -165,7 +166,7 @@ export function Step1CustomerVehicle({ data, update }: Props) {
       {/* Vehicle Information */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🚗</div>
+          <div className="ncb-card-icon"><Car className="size-4" /></div>
           <div className="ncb-card-title">VEHICLE INFORMATION</div>
         </div>
         <div className="ncb-form-grid ncb-form-grid--4">

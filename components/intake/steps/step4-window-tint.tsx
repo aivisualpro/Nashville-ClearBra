@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { IntakeData } from "../intake-wizard";
+import { Film, Car, DollarSign } from "lucide-react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 type TintRow = { series: string; shade: string; position: string; price: string };
@@ -32,7 +33,7 @@ export function Step4WindowTint({ data, update }: Props) {
       {/* Film Series */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🎬</div>
+          <div className="ncb-card-icon"><Film className="size-4" /></div>
           <div>
             <div className="ncb-card-title">FILM SERIES</div>
             <div className="ncb-card-subtitle">Choose the film series you&apos;d like to use.</div>
@@ -41,7 +42,7 @@ export function Step4WindowTint({ data, update }: Props) {
         <div className="ncb-radio-cards">
           {SERIES.map((s) => (
             <div key={s} className={`ncb-radio-card ${filmSeries === s ? "ncb-radio-card--selected" : ""}`} onClick={() => update({ tintFilmSeries: s })}>
-              <input type="radio" checked={filmSeries === s} readOnly style={{ accentColor: "#E8601C" }} />
+              <input type="radio" checked={filmSeries === s} readOnly style={{ accentColor: "#E77000" }} />
               <div className="ncb-radio-card-label">{s}</div>
             </div>
           ))}
@@ -51,7 +52,7 @@ export function Step4WindowTint({ data, update }: Props) {
       {/* Tint Selections */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🚗</div>
+          <div className="ncb-card-icon"><Car className="size-4" /></div>
           <div>
             <div className="ncb-card-title">TINT SELECTIONS</div>
             <div className="ncb-card-subtitle">Add one or more tint rows for this vehicle.</div>
@@ -92,7 +93,7 @@ export function Step4WindowTint({ data, update }: Props) {
       {/* Tint Price */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">💲</div>
+          <div className="ncb-card-icon"><DollarSign className="size-4" /></div>
           <div>
             <div className="ncb-card-title">TINT PRICE</div>
             <div className="ncb-card-subtitle">Total price for window tint.</div>

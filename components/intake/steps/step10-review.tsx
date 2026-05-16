@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { IntakeData } from "../intake-wizard";
+import { User, ClipboardList, FileText, DollarSign, CheckCircle } from "lucide-react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -56,7 +57,7 @@ export function Step10Review({ data, update }: Props) {
         {/* Customer + Vehicle */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon">👤</div>
+            <div className="ncb-card-icon"><User className="size-4" /></div>
             <div className="ncb-card-title">CUSTOMER + VEHICLE SUMMARY</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", fontSize: "0.8rem" }}>
@@ -78,7 +79,7 @@ export function Step10Review({ data, update }: Props) {
         {/* Selected Services */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon">📋</div>
+            <div className="ncb-card-icon"><ClipboardList className="size-4" /></div>
             <div className="ncb-card-title">SELECTED SERVICES SUMMARY</div>
           </div>
           <ul style={{ fontSize: "0.85rem", paddingLeft: "1.25rem", margin: 0 }}>
@@ -94,7 +95,7 @@ export function Step10Review({ data, update }: Props) {
         {/* Job Instructions */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon">📝</div>
+            <div className="ncb-card-icon"><FileText className="size-4" /></div>
             <div className="ncb-card-title">JOB INSTRUCTIONS SUMMARY</div>
           </div>
           <p style={{ fontSize: "0.85rem", color: "#374151" }}>{v("addRequests") || "No special instructions."}</p>
@@ -103,7 +104,7 @@ export function Step10Review({ data, update }: Props) {
         {/* Total Price */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon" style={{ background: "#16a34a" }}>💲</div>
+            <div className="ncb-card-icon"><DollarSign className="size-4" /></div>
             <div className="ncb-card-title">TOTAL PRICE</div>
           </div>
           <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>Estimated Total</div>
@@ -144,7 +145,7 @@ export function Step10Review({ data, update }: Props) {
             </div>
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.75rem", fontSize: "0.8rem", cursor: "pointer" }}>
-            <input type="checkbox" checked={authConfirm} onChange={() => setAuthConfirm(!authConfirm)} style={{ accentColor: "#E8601C" }} />
+            <input type="checkbox" checked={authConfirm} onChange={() => setAuthConfirm(!authConfirm)} style={{ accentColor: "#E77000" }} />
             I authorize the services listed above and confirm that all information is correct.
           </label>
         </div>
@@ -164,7 +165,7 @@ export function Step10Review({ data, update }: Props) {
           </div>
           <div className="ncb-card">
             <div className="ncb-card-header">
-              <div className="ncb-card-icon">📋</div>
+              <div className="ncb-card-icon"><ClipboardList className="size-4" /></div>
               <div className="ncb-card-title">WORK ORDER SUMMARY</div>
             </div>
             <div className="ncb-price-row"><span>Services</span><span>{services.length} items</span></div>
@@ -175,7 +176,7 @@ export function Step10Review({ data, update }: Props) {
       </div>
 
       <div className="ncb-success-banner">
-        ✅ PDF Work Order will be generated after submission.
+        <CheckCircle className="size-4" style={{ color: "#16a34a" }} /> PDF Work Order will be generated after submission.
       </div>
     </>
   );

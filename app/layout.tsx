@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
 import { Toaster } from "sonner";
+import { UpdateNotifier } from "@/components/update-notifier";
 
 export const metadata: Metadata = {
   title: "Nashville ClearBra",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#E8601C",
+  themeColor: "#E77000",
 };
 
 export default async function RootLayout({
@@ -44,6 +45,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icon.png" />
       </head>
       <body
+        suppressHydrationWarning
         className={cn(
           "bg-background overscroll-none font-sans antialiased h-screen overflow-hidden flex flex-col",
           activeThemeValue ? `theme-${activeThemeValue}` : "",
@@ -61,6 +63,7 @@ export default async function RootLayout({
             <ActiveThemeProvider initialTheme={activeThemeValue}>
               {children}
               <Toaster richColors position="top-center" />
+              <UpdateNotifier />
             </ActiveThemeProvider>
           </AuthProvider>
         </ThemeProvider>

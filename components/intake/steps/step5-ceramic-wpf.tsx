@@ -1,5 +1,6 @@
 "use client";
 import { IntakeData } from "../intake-wizard";
+import { Shield, Car, DollarSign } from "lucide-react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -28,7 +29,7 @@ export function Step5CeramicWPF({ data, update }: Props) {
       <div className="ncb-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div className="ncb-card-header" style={{ marginBottom: 0 }}>
-            <div className="ncb-card-icon">🛡️</div>
+            <div className="ncb-card-icon"><Shield className="size-4" /></div>
             <div>
               <div className="ncb-card-title">WINDSHIELD PROTECTION FILM (WPF)</div>
               <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", marginTop: "0.25rem" }}>
@@ -51,13 +52,13 @@ export function Step5CeramicWPF({ data, update }: Props) {
       {/* Ceramic Coating */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🛡️</div>
+          <div className="ncb-card-icon"><Shield className="size-4" /></div>
           <div className="ncb-card-title">CERAMIC COATING</div>
         </div>
         <div className="ncb-radio-cards">
           {CERAMIC_OPTIONS.map((o) => (
             <div key={o.label} className={`ncb-radio-card ${ceramicType === o.label ? "ncb-radio-card--selected" : ""}`} onClick={() => update({ ceramicType: o.label })}>
-              <input type="radio" checked={ceramicType === o.label} readOnly style={{ accentColor: "#E8601C" }} />
+              <input type="radio" checked={ceramicType === o.label} readOnly style={{ accentColor: "#E77000" }} />
               <div className="ncb-radio-card-label">{o.label}</div>
               <div className="ncb-radio-card-price">{o.price}</div>
             </div>
@@ -68,13 +69,13 @@ export function Step5CeramicWPF({ data, update }: Props) {
       {/* Ceramic Surfaces */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">🚗</div>
+          <div className="ncb-card-icon"><Car className="size-4" /></div>
           <div className="ncb-card-title">CERAMIC SURFACES</div>
         </div>
         <div className="ncb-check-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
           {SURFACES.map((s) => (
             <div key={s} className={`ncb-check-item ${ceramicSurfaces.includes(s) ? "ncb-check-item--selected" : ""}`} onClick={() => toggleSurface(s)}>
-              <input type="checkbox" checked={ceramicSurfaces.includes(s)} readOnly style={{ accentColor: "#E8601C" }} />
+              <input type="checkbox" checked={ceramicSurfaces.includes(s)} readOnly style={{ accentColor: "#E77000" }} />
               {s}
             </div>
           ))}
@@ -84,7 +85,7 @@ export function Step5CeramicWPF({ data, update }: Props) {
       {/* Ceramic Price */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">💲</div>
+          <div className="ncb-card-icon"><DollarSign className="size-4" /></div>
           <div className="ncb-card-title">CERAMIC PRICE</div>
         </div>
         <div style={{ display: "flex", gap: "2rem", alignItems: "center", flexWrap: "wrap" }}>

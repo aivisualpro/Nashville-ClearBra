@@ -53,18 +53,18 @@ export function Step7JobInstructions({ data, update }: Props) {
       <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
         {item.positions?.map((p) => (
           <label key={p} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", cursor: "pointer" }}>
-            <input type="checkbox" checked={posArr(item.key).includes(p)} onChange={() => togglePos(item.key, p)} style={{ accentColor: "#E8601C" }} />
+            <input type="checkbox" checked={posArr(item.key).includes(p)} onChange={() => togglePos(item.key, p)} style={{ accentColor: "#E77000" }} />
             {p}
           </label>
         ))}
         {item.options?.map((o) => (
           <label key={o} style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", cursor: "pointer" }}>
-            <input type="radio" name={item.key} checked={v(item.key) === o} onChange={() => update({ [item.key]: o })} style={{ accentColor: "#E8601C" }} />
+            <input type="radio" name={item.key} checked={v(item.key) === o} onChange={() => update({ [item.key]: o })} style={{ accentColor: "#E77000" }} />
             {o}
           </label>
         ))}
         {item.checkbox && (
-          <input type="checkbox" checked={checked(item.key)} onChange={() => toggle(item.key)} style={{ accentColor: "#E8601C", width: 18, height: 18 }} />
+          <input type="checkbox" checked={checked(item.key)} onChange={() => toggle(item.key)} style={{ accentColor: "#E77000", width: 18, height: 18 }} />
         )}
       </div>
     </div>

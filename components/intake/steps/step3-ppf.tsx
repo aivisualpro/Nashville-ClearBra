@@ -28,12 +28,12 @@ export function Step3PPF({ data, update }: Props) {
         {/* Film Type */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon" style={{ background: "#E8601C" }}>1</div>
+            <div className="ncb-card-icon" style={{ background: "#E77000" }}>1</div>
             <div className="ncb-card-title">FILM TYPE</div>
           </div>
           {FILM_TYPES.map((f) => (
             <label key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0", cursor: "pointer", fontSize: "0.875rem" }}>
-              <input type="radio" name="ppfFilm" checked={v("ppfFilm") === f} onChange={() => update({ ppfFilm: f })} style={{ accentColor: "#E8601C" }} />
+              <input type="radio" name="ppfFilm" checked={v("ppfFilm") === f} onChange={() => update({ ppfFilm: f })} style={{ accentColor: "#E77000" }} />
               {f}
             </label>
           ))}
@@ -48,7 +48,7 @@ export function Step3PPF({ data, update }: Props) {
         {/* Install Level */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon" style={{ background: "#E8601C" }}>2</div>
+            <div className="ncb-card-icon" style={{ background: "#E77000" }}>2</div>
             <div className="ncb-card-title">INSTALL LEVEL</div>
           </div>
           <div className="ncb-toggle-group">
@@ -61,7 +61,7 @@ export function Step3PPF({ data, update }: Props) {
       {/* Package / Coverage */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon" style={{ background: "#E8601C" }}>3</div>
+          <div className="ncb-card-icon" style={{ background: "#E77000" }}>3</div>
           <div>
             <div className="ncb-card-title">PACKAGE / COVERAGE</div>
             <div className="ncb-card-subtitle">Select all that apply</div>
@@ -70,7 +70,7 @@ export function Step3PPF({ data, update }: Props) {
         <div className="ncb-check-grid">
           {PACKAGES.map((p) => (
             <div key={p} className={`ncb-check-item ${ppfPackages.includes(p) ? "ncb-check-item--selected" : ""}`} onClick={() => togglePkg(p)}>
-              <input type="checkbox" checked={ppfPackages.includes(p)} readOnly style={{ accentColor: "#E8601C" }} />
+              <input type="checkbox" checked={ppfPackages.includes(p)} readOnly style={{ accentColor: "#E77000" }} />
               {p}
             </div>
           ))}
@@ -80,7 +80,7 @@ export function Step3PPF({ data, update }: Props) {
       {/* Notes */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon" style={{ background: "#E8601C" }}>4</div>
+          <div className="ncb-card-icon" style={{ background: "#E77000" }}>4</div>
           <div className="ncb-card-title">INDIVIDUAL PANELS / NOTES</div>
         </div>
         <textarea className="ncb-textarea" placeholder="Add any details about specific panels or coverage..." value={v("ppfNotes")} onChange={set("ppfNotes")} maxLength={500} />
@@ -90,7 +90,7 @@ export function Step3PPF({ data, update }: Props) {
       {/* PPF Price */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon" style={{ background: "#E8601C" }}>5</div>
+          <div className="ncb-card-icon" style={{ background: "#E77000" }}>5</div>
           <div>
             <div className="ncb-card-title">PPF PRICE</div>
             <div className="ncb-card-subtitle">Enter the total price for Paint Protection Film</div>

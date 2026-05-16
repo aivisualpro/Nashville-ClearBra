@@ -1,14 +1,16 @@
 "use client";
 import { IntakeData } from "../intake-wizard";
+import { Shield, Blinds, Sparkles, Plus, ClipboardList, Users } from "lucide-react";
+import React from "react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
 const SERVICES = [
-  { key: "ppf", label: "Paint Protection Film (PPF)", icon: "🛡️" },
-  { key: "tint", label: "Window Tint", icon: "🪟" },
-  { key: "wpf", label: "Windshield Protection Film (WPF)", icon: "🛡️" },
-  { key: "ceramic", label: "Ceramic Coating", icon: "✨" },
-  { key: "addons", label: "Add-Ons", icon: "➕" },
+  { key: "ppf", label: "Paint Protection Film (PPF)", icon: <Shield className="size-5" /> },
+  { key: "tint", label: "Window Tint", icon: <Blinds className="size-5" /> },
+  { key: "wpf", label: "Windshield Protection Film (WPF)", icon: <Shield className="size-5" /> },
+  { key: "ceramic", label: "Ceramic Coating", icon: <Sparkles className="size-5" /> },
+  { key: "addons", label: "Add-Ons", icon: <Plus className="size-5" /> },
 ];
 
 export function Step2ServiceSelection({ data, update }: Props) {
@@ -25,7 +27,7 @@ export function Step2ServiceSelection({ data, update }: Props) {
     <>
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">📋</div>
+          <div className="ncb-card-icon"><ClipboardList className="size-4" /></div>
           <div>
             <div className="ncb-card-title">SELECT SERVICES</div>
             <div className="ncb-card-subtitle">Select all services that apply to this vehicle.</div>
@@ -47,7 +49,7 @@ export function Step2ServiceSelection({ data, update }: Props) {
 
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">👥</div>
+          <div className="ncb-card-icon"><Users className="size-4" /></div>
           <div className="ncb-card-title">REFERRAL</div>
         </div>
         <div className="ncb-form-grid ncb-form-grid--3">

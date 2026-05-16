@@ -1,5 +1,6 @@
 "use client";
 import { IntakeData } from "../intake-wizard";
+import { DollarSign, CheckCircle, Users } from "lucide-react";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -29,7 +30,7 @@ export function Step8PricingTerms({ data, update }: Props) {
         {/* Price Summary */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon">💲</div>
+            <div className="ncb-card-icon"><DollarSign className="size-4" /></div>
             <div className="ncb-card-title">PRICE SUMMARY</div>
           </div>
           <div className="ncb-price-row"><span>PPF Price</span><span>${ppf.toFixed(2)}</span></div>
@@ -50,7 +51,7 @@ export function Step8PricingTerms({ data, update }: Props) {
         {/* Acknowledgments */}
         <div className="ncb-card">
           <div className="ncb-card-header">
-            <div className="ncb-card-icon">✅</div>
+            <div className="ncb-card-icon"><CheckCircle className="size-4" /></div>
             <div className="ncb-card-title">REQUIRED ACKNOWLEDGMENTS</div>
           </div>
           {ACKS.map((a) => (
@@ -71,7 +72,7 @@ export function Step8PricingTerms({ data, update }: Props) {
       {/* XPEL Referral */}
       <div className="ncb-card">
         <div className="ncb-card-header">
-          <div className="ncb-card-icon">👥</div>
+          <div className="ncb-card-icon"><Users className="size-4" /></div>
           <div className="ncb-card-title">XPEL REFERRAL PROGRAM (If Applicable)</div>
         </div>
         <div className="ncb-field" style={{ maxWidth: 400 }}>

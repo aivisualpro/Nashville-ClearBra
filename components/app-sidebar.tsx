@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { APP_VERSION } from "@/lib/version";
 import {
   IconBriefcase,
   IconDashboard,
@@ -132,6 +133,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarModeSwitcher />
       </SidebarContent>
       <SidebarFooter>
+        <div className="px-3 py-1 group-data-[collapsible=icon]:hidden">
+          <span className="text-[10px] font-medium text-muted-foreground/60 tracking-wide">Version {APP_VERSION}</span>
+        </div>
         <NavUser />
       </SidebarFooter>
     </Sidebar>

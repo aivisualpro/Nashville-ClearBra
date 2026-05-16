@@ -27,6 +27,12 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Intake pages manage their own scrolling inside the wizard */
+[data-slot="sidebar-inset"] > .intake-layout {
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -251,4 +257,42 @@ body {
   [data-slot="toggle-group-item"] {
     @apply !rounded-none !shadow-none;
   }
+}
+
+/* ── Action Buttons (Jobs table) ── */
+.ncb-action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ncb-action-btn:hover {
+  background: #1B2A4A;
+  color: #fff;
+  border-color: #1B2A4A;
+}
+.ncb-action-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #E8601C;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 3px;
 }

@@ -10,20 +10,29 @@ import { unstable_cache } from "next/cache";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Doc = Record<string, any>;
 
-/** Serialize a MongoDB document (convert _id to string, dates to ISO) */
+/** Serialize a MongoDB document (convert _id to string, dates to ISO, recurse into nested objects) */
 function serialize(doc: Doc): Doc {
   const { _id, ...rest } = doc;
-  const serialized: Doc = { _id: _id.toString() };
+  const serialized: Doc = _id ? { _id: _id.toString() } : {};
   for (const [key, value] of Object.entries(rest)) {
-    if (value instanceof Date) {
-      serialized[key] = value.toISOString();
-    } else if (value && typeof value === "object" && value._bsontype === "ObjectId") {
-      serialized[key] = value.toString();
-    } else {
-      serialized[key] = value;
-    }
+    serialized[key] = serializeValue(value);
   }
   return serialized;
+}
+
+function serializeValue(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object" && (value as Doc)._bsontype === "ObjectId") return (value as Doc).toString();
+  if (Array.isArray(value)) return value.map(serializeValue);
+  if (typeof value === "object") {
+    const obj: Doc = {};
+    for (const [k, v] of Object.entries(value as Doc)) {
+      obj[k] = serializeValue(v);
+    }
+    return obj;
+  }
+  return value;
 }
 
 // ─── Raw fetchers (not cached — used by cache wrappers) ─────────────────────
