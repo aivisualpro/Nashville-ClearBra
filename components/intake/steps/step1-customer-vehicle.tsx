@@ -175,12 +175,18 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Make</label>
-            <select className="ncb-select" value={v("vMake")} onChange={set("vMake")}>
-              <option value="">Select</option>
-              {["Tesla","BMW","Mercedes","Porsche","Audi","Ford","Chevrolet","Toyota","Honda","Rivian","Lexus","Other"].map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
+            <OptionSelect
+              optionSetName="Vehicle Make"
+              value={v("vMakeId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ vMakeId: opt._id, vMake: opt.value });
+                } else {
+                  update({ vMakeId: "", vMake: "" });
+                }
+              }}
+              placeholder="Select make…"
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Model</label>

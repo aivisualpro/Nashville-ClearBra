@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { IconShieldCheck, IconClipboardText, IconBrandGoogle } from "@tabler/icons-react";
+import { IconShieldCheck, IconClipboardText } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 export function LoginLanding({ error }: { error?: string }) {
@@ -46,9 +47,14 @@ export function LoginLanding({ error }: { error?: string }) {
       <div className="ncb-login-container">
         {/* Brand */}
         <div className="ncb-login-brand">
-          <h1 className="ncb-login-title">
-            NASHVILLE <span className="ncb-login-title-accent">CLEARBRA</span>
-          </h1>
+          <Image
+            src="/logo.png"
+            alt="Nashville ClearBra"
+            width={280}
+            height={72}
+            className="mx-auto h-16 w-auto"
+            priority
+          />
           <p className="ncb-login-subtitle">
             Premium Paint Protection & Ceramic Coating
           </p>
