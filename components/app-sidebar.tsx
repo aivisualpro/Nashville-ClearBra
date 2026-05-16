@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  IconBriefcase,
   IconCamera,
   IconChartBar,
   IconDashboard,
@@ -42,8 +43,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
+    },
+    {
+      title: "Jobs",
+      url: "/dashboard/jobs",
+      icon: IconBriefcase,
     },
     {
       title: "Lifecycle",
@@ -163,7 +169,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">
-                  Orcish Dashboard
+                  Nashville ClearBra
                 </span>
               </a>
             </SidebarMenuButton>
