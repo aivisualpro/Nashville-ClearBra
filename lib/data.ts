@@ -118,3 +118,23 @@ export const getJobs = unstable_cache(
   ["jobs"],
   { revalidate: 30, tags: ["jobs"] }
 );
+
+// ─── Options ────────────────────────────────────────────────────────────────
+
+async function _fetchOptions(): Promise<Doc[]> {
+  const mongoose = await dbConnect();
+  const db = mongoose.connection.db;
+  if (!db) return [];
+  const docs = await db
+    .collection("Nashville_Options")
+    .find({})
+    .sort({ _id: -1 })
+    .toArray();
+  return docs.map(serialize);
+}
+
+export const getOptions = unstable_cache(
+  _fetchOptions,
+  ["options"],
+  { revalidate: 30, tags: ["options"] }
+);

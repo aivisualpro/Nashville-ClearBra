@@ -9,6 +9,7 @@ import {
   IconMoon,
   IconPackage,
   IconSettings,
+  IconSettings2,
   IconSun,
   IconTool,
   IconUsers,
@@ -60,6 +61,11 @@ const data = {
       title: "Materials",
       url: "/materials",
       icon: IconPackage,
+    },
+    {
+      title: "Options",
+      url: "/options",
+      icon: IconSettings2,
     },
   ],
   navSecondary: [
