@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
+import { OrbitControls, Html, Edges, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import type { DamagePin } from "./steps/car-damage-marker-types";
 
@@ -23,97 +23,185 @@ const DAMAGE_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-// ─── Low-poly stylized car (all primitives, no GLB) ─────────────────
-function CarBody() {
-  const bodyColor = "#1B2A4A";
-  const glassColor = "#88ccee";
-  const wheelColor = "#222";
-  const lightFront = "#ffffcc";
-  const lightRear = "#ff4444";
+// ─── Blueprint-style wireframe car (translucent panels + edge lines) ─
+// Each panel is a translucent light-blue volume with crisp edge lines drawn
+// via drei's <Edges>. Glowing cyan headlights and a subtle ground shadow
+// finish the "blueprint / x-ray" look from the reference image.
+const PANEL_FILL = "#bfe1f5";   // very light cyan-blue translucent fill
+const EDGE_COLOR = "#1e5b8e";   // deep blue edge lines
+const GLASS_FILL = "#9ed8f5";
+const WHEEL_RIM = "#9ca3af";
+const TIRE_DARK = "#1f2937";
+const HEAD_GLOW = "#22d3ee";    // cyan headlight glow
+const REAR_GLOW = "#ef4444";
 
+function Panel({
+  position,
+  rotation,
+  size,
+  color = PANEL_FILL,
+  opacity = 0.15,
+  edgeColor = EDGE_COLOR,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  size: [number, number, number];
+  color?: string;
+  opacity?: number;
+  edgeColor?: string;
+}) {
+  return (
+    <mesh position={position} rotation={rotation}>
+      <boxGeometry args={size} />
+      <meshPhysicalMaterial
+        color={color}
+        transparent
+        opacity={opacity}
+        transmission={0.4}
+        roughness={0.15}
+        metalness={0.0}
+        clearcoat={0.4}
+        depthWrite={false}
+      />
+      <Edges threshold={15} color={edgeColor} />
+    </mesh>
+  );
+}
+
+function Wheel({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Tire */}
+      <mesh>
+        <cylinderGeometry args={[0.34, 0.34, 0.22, 28]} />
+        <meshPhysicalMaterial
+          color={TIRE_DARK}
+          transparent
+          opacity={0.18}
+          roughness={0.6}
+          depthWrite={false}
+        />
+        <Edges threshold={15} color={EDGE_COLOR} />
+      </mesh>
+      {/* Rim */}
+      <mesh>
+        <cylinderGeometry args={[0.18, 0.18, 0.24, 16]} />
+        <meshStandardMaterial color={WHEEL_RIM} metalness={0.2} roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function CarBody() {
   return (
     <group>
-      {/* Main body */}
-      <mesh position={[0, 0.45, 0]} castShadow receiveShadow>
-        <boxGeometry args={[4.2, 0.7, 1.8]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.3} />
+      {/* ── Lower chassis ── */}
+      <Panel position={[0, 0.45, 0]} size={[4.2, 0.55, 1.7]} />
+
+      {/* ── Hood (front, slightly raised) ── */}
+      <Panel position={[-1.4, 0.78, 0]} size={[1.4, 0.12, 1.65]} />
+
+      {/* ── Trunk (rear) ── */}
+      <Panel position={[1.55, 0.78, 0]} size={[1.0, 0.12, 1.65]} />
+
+      {/* ── Cabin / roof ── */}
+      <Panel position={[0.1, 1.18, 0]} size={[2.0, 0.55, 1.55]} />
+
+      {/* ── Windshield (front, angled) ── */}
+      <Panel
+        position={[-0.85, 1.05, 0]}
+        rotation={[0, 0, 0.42]}
+        size={[0.06, 0.55, 1.5]}
+        color={GLASS_FILL}
+        opacity={0.22}
+      />
+
+      {/* ── Rear window (angled) ── */}
+      <Panel
+        position={[1.05, 1.05, 0]}
+        rotation={[0, 0, -0.42]}
+        size={[0.06, 0.55, 1.5]}
+        color={GLASS_FILL}
+        opacity={0.22}
+      />
+
+      {/* ── Side windows ── */}
+      <Panel
+        position={[0.1, 1.22, 0.78]}
+        size={[1.85, 0.4, 0.03]}
+        color={GLASS_FILL}
+        opacity={0.22}
+      />
+      <Panel
+        position={[0.1, 1.22, -0.78]}
+        size={[1.85, 0.4, 0.03]}
+        color={GLASS_FILL}
+        opacity={0.22}
+      />
+
+      {/* ── Front bumper ── */}
+      <Panel position={[-2.08, 0.4, 0]} size={[0.18, 0.4, 1.8]} />
+
+      {/* ── Rear bumper ── */}
+      <Panel position={[2.08, 0.4, 0]} size={[0.18, 0.4, 1.8]} />
+
+      {/* ── Side mirrors ── */}
+      <Panel position={[-0.45, 0.95, 0.92]} size={[0.16, 0.12, 0.14]} />
+      <Panel position={[-0.45, 0.95, -0.92]} size={[0.16, 0.12, 0.14]} />
+
+      {/* ── Door split lines ── */}
+      <mesh position={[0.15, 0.45, 0.86]}>
+        <boxGeometry args={[0.015, 0.55, 0.015]} />
+        <meshBasicMaterial color={EDGE_COLOR} />
       </mesh>
-      {/* Cabin */}
-      <mesh position={[0.15, 1.0, 0]} castShadow>
-        <boxGeometry args={[2.2, 0.6, 1.6]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.3} />
+      <mesh position={[0.15, 0.45, -0.86]}>
+        <boxGeometry args={[0.015, 0.55, 0.015]} />
+        <meshBasicMaterial color={EDGE_COLOR} />
       </mesh>
-      {/* Windshield (front) */}
-      <mesh position={[-0.85, 1.0, 0]} rotation={[0, 0, 0.3]}>
-        <boxGeometry args={[0.05, 0.55, 1.5]} />
-        <meshStandardMaterial color={glassColor} transparent opacity={0.5} metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* Rear window */}
-      <mesh position={[1.15, 1.0, 0]} rotation={[0, 0, -0.3]}>
-        <boxGeometry args={[0.05, 0.55, 1.5]} />
-        <meshStandardMaterial color={glassColor} transparent opacity={0.5} metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* Side windows L */}
-      <mesh position={[0.15, 1.0, 0.81]}>
-        <boxGeometry args={[2.0, 0.45, 0.02]} />
-        <meshStandardMaterial color={glassColor} transparent opacity={0.4} metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* Side windows R */}
-      <mesh position={[0.15, 1.0, -0.81]}>
-        <boxGeometry args={[2.0, 0.45, 0.02]} />
-        <meshStandardMaterial color={glassColor} transparent opacity={0.4} metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* Hood */}
-      <mesh position={[-1.5, 0.82, 0]} castShadow>
-        <boxGeometry args={[1.2, 0.05, 1.75]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.3} />
-      </mesh>
-      {/* Trunk */}
-      <mesh position={[1.6, 0.82, 0]} castShadow>
-        <boxGeometry args={[0.9, 0.05, 1.75]} />
-        <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.3} />
-      </mesh>
-      {/* Front bumper */}
-      <mesh position={[-2.15, 0.35, 0]}>
-        <boxGeometry args={[0.15, 0.5, 1.9]} />
-        <meshStandardMaterial color="#111" metalness={0.3} roughness={0.7} />
-      </mesh>
-      {/* Rear bumper */}
-      <mesh position={[2.15, 0.35, 0]}>
-        <boxGeometry args={[0.15, 0.5, 1.9]} />
-        <meshStandardMaterial color="#111" metalness={0.3} roughness={0.7} />
-      </mesh>
-      {/* Headlights */}
-      {[0.6, -0.6].map((z) => (
-        <mesh key={`hl-${z}`} position={[-2.13, 0.5, z]}>
-          <boxGeometry args={[0.08, 0.2, 0.4]} />
-          <meshStandardMaterial color={lightFront} emissive={lightFront} emissiveIntensity={0.3} />
+
+      {/* ── Headlights (glowing cyan, like reference) ── */}
+      {[0.55, -0.55].map((z) => (
+        <group key={`hl-${z}`} position={[-2.14, 0.55, z]}>
+          <mesh>
+            <sphereGeometry args={[0.12, 24, 24]} />
+            <meshStandardMaterial
+              color={HEAD_GLOW}
+              emissive={HEAD_GLOW}
+              emissiveIntensity={1.6}
+              toneMapped={false}
+            />
+          </mesh>
+          {/* outer halo */}
+          <mesh>
+            <sphereGeometry args={[0.17, 24, 24]} />
+            <meshBasicMaterial
+              color={HEAD_GLOW}
+              transparent
+              opacity={0.18}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* ── Taillights ── */}
+      {[0.55, -0.55].map((z) => (
+        <mesh key={`tl-${z}`} position={[2.14, 0.55, z]}>
+          <boxGeometry args={[0.08, 0.18, 0.32]} />
+          <meshStandardMaterial
+            color={REAR_GLOW}
+            emissive={REAR_GLOW}
+            emissiveIntensity={0.7}
+            toneMapped={false}
+          />
         </mesh>
       ))}
-      {/* Taillights */}
-      {[0.6, -0.6].map((z) => (
-        <mesh key={`tl-${z}`} position={[2.13, 0.5, z]}>
-          <boxGeometry args={[0.08, 0.2, 0.4]} />
-          <meshStandardMaterial color={lightRear} emissive={lightRear} emissiveIntensity={0.3} />
-        </mesh>
-      ))}
-      {/* Wheels */}
-      {[
-        [-1.3, 0.15, 1.0], [-1.3, 0.15, -1.0],
-        [1.3, 0.15, 1.0], [1.3, 0.15, -1.0],
-      ].map(([x, y, z], i) => (
-        <mesh key={`w-${i}`} position={[x, y, z]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
-          <meshStandardMaterial color={wheelColor} metalness={0.4} roughness={0.6} />
-        </mesh>
-      ))}
-      {/* Side mirrors */}
-      {[0.95, -0.95].map((z) => (
-        <mesh key={`m-${z}`} position={[-0.6, 0.9, z]}>
-          <boxGeometry args={[0.15, 0.1, 0.12]} />
-          <meshStandardMaterial color={bodyColor} metalness={0.6} roughness={0.3} />
-        </mesh>
-      ))}
+
+      {/* ── Wheels ── */}
+      <Wheel position={[-1.25, 0.34, 0.92]} />
+      <Wheel position={[-1.25, 0.34, -0.92]} />
+      <Wheel position={[1.25, 0.34, 0.92]} />
+      <Wheel position={[1.25, 0.34, -0.92]} />
     </group>
   );
 }
@@ -203,12 +291,16 @@ function Scene({
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow />
-      <directionalLight position={[-3, 4, -3]} intensity={0.4} />
+      {/* Bright, even blueprint-style lighting (no HDR — CSP-safe) */}
+      <ambientLight intensity={1.1} />
+      <hemisphereLight args={["#ffffff", "#cbd5e1", 0.6]} />
+      <directionalLight position={[6, 9, 5]} intensity={0.7} />
+      <directionalLight position={[-6, 5, -4]} intensity={0.45} />
+
       <group onClick={handleClick}>
         <CarBody />
       </group>
+
       {pins.map((pin) => (
         <PinMarker
           key={pin.id}
@@ -217,18 +309,25 @@ function Scene({
           onClick={() => onSelectPin(pin.id)}
         />
       ))}
+
       <OrbitControls
         makeDefault
         enablePan={false}
         minDistance={3}
         maxDistance={10}
-        target={[0, 0.5, 0]}
+        target={[0, 0.6, 0]}
       />
-      {/* Ground */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-        <planeGeometry args={[12, 12]} />
-        <meshStandardMaterial color="#1a1a2e" metalness={0.2} roughness={0.9} />
-      </mesh>
+
+      {/* Soft circular contact shadow under the car (no dark ground plane) */}
+      <ContactShadows
+        position={[0, 0.01, 0]}
+        opacity={0.35}
+        scale={9}
+        blur={2.4}
+        far={3}
+        resolution={512}
+        color="#1e3a5f"
+      />
     </>
   );
 }
@@ -276,14 +375,16 @@ export default function CarDamageMarker({ pins, onChange }: CarDamageMarkerProps
           borderRadius: "0.75rem",
           overflow: "hidden",
           border: "1px solid #d1d5db",
-          background: "#0f0f1a",
+          background:
+            "radial-gradient(ellipse at center, #ffffff 0%, #eaf2f8 70%, #d9e4ee 100%)",
           position: "relative",
         }}
       >
         <Canvas
           shadows
-          camera={{ position: [4, 3, 4], fov: 45 }}
-          style={{ width: "100%", height: "100%", minHeight: 400 }}
+          camera={{ position: [-5.5, 3.5, 4.5], fov: 38 }}
+          gl={{ antialias: true, alpha: true }}
+          style={{ width: "100%", height: "100%", minHeight: 400, background: "transparent" }}
         >
           <Scene
             pins={pins}
@@ -297,12 +398,15 @@ export default function CarDamageMarker({ pins, onChange }: CarDamageMarkerProps
             position: "absolute",
             bottom: 12,
             left: 12,
-            background: "rgba(0,0,0,0.6)",
-            color: "#aaa",
+            background: "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(4px)",
+            color: "#1e3a5f",
             fontSize: "0.7rem",
             padding: "4px 10px",
             borderRadius: 6,
             pointerEvents: "none",
+            border: "1px solid #d9e4ee",
+            fontWeight: 500,
           }}
         >
           Click on car to add pin • Drag to orbit • Scroll to zoom
