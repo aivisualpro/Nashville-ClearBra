@@ -15,46 +15,16 @@ export function Step9KnownDamage({ data, update }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
     canvas.width = canvas.offsetWidth * 2;
     canvas.height = canvas.offsetHeight * 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     ctx.scale(2, 2);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#1B2A4A";
-    // Draw simple car outline
-    drawCar(ctx, canvas.offsetWidth, canvas.offsetHeight);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
   }, []);
-
-  const drawCar = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = "#d1d5db";
-    ctx.lineWidth = 1.5;
-    const cx = w / 2, cy = h / 2;
-    // Top-down car body
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, w * 0.15, h * 0.4, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    // Windshield
-    ctx.beginPath();
-    ctx.moveTo(cx - w * 0.1, cy - h * 0.2);
-    ctx.lineTo(cx + w * 0.1, cy - h * 0.2);
-    ctx.stroke();
-    // Rear
-    ctx.beginPath();
-    ctx.moveTo(cx - w * 0.1, cy + h * 0.2);
-    ctx.lineTo(cx + w * 0.1, cy + h * 0.2);
-    ctx.stroke();
-    // Side mirrors
-    ctx.beginPath();
-    ctx.ellipse(cx - w * 0.17, cy - h * 0.1, 8, 5, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(cx + w * 0.17, cy - h * 0.1, 8, 5, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-  };
 
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -85,16 +55,49 @@ export function Step9KnownDamage({ data, update }: Props) {
 
   const stopDraw = () => setIsDrawing(false);
 
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  };
+
   return (
     <>
       <div className="ncb-info-banner">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="10" opacity="0.2"/><text x="10" y="14" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor">i</text></svg>
-        Please mark any damage you are aware of.
+        Please mark any damage you are aware of. Draw directly on the vehicle diagram below.
       </div>
 
       <div className="ncb-card" style={{ marginTop: "1rem" }}>
-        <div className="ncb-card-title" style={{ marginBottom: "0.75rem" }}>MARK KNOWN DAMAGE</div>
-        <div className="ncb-damage-canvas-wrap">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <div className="ncb-card-title">MARK KNOWN DAMAGE</div>
+          <button
+            type="button"
+            onClick={clearCanvas}
+            style={{
+              fontSize: "0.75rem", padding: "0.25rem 0.75rem",
+              border: "1px solid #d1d5db", borderRadius: "0.375rem",
+              background: "#fff", color: "#6b7280", cursor: "pointer",
+            }}
+          >
+            Clear Drawing
+          </button>
+        </div>
+        <div
+          className="ncb-damage-canvas-wrap"
+          style={{
+            backgroundImage: "url(/car-skeleton.png)",
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+          }}
+        >
           <canvas
             ref={canvasRef}
             onMouseDown={startDraw}
@@ -104,6 +107,7 @@ export function Step9KnownDamage({ data, update }: Props) {
             onTouchStart={startDraw}
             onTouchMove={draw}
             onTouchEnd={stopDraw}
+            style={{ cursor: "crosshair" }}
           />
         </div>
       </div>
