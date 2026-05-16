@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
   IconBriefcase,
   IconDashboard,
   IconFileDescription,
-  IconInnerShadowTop,
   IconMoon,
   IconPackage,
   IconSettings,
@@ -106,11 +106,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">
-                  Nashville ClearBra
-                </span>
+              <a href="/dashboard">
+                <Image
+                  src="/logo.png"
+                  alt="Nashville ClearBra"
+                  width={140}
+                  height={36}
+                  className="h-8 w-auto"
+                  priority
+                />
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
