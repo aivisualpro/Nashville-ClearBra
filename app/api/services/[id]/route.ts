@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
     const collection = db.collection("Nashville_Services");
-    const service = await collection.findOne({ _id: new ObjectId(id) });
+    const service = await collection.findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!service) {
       return NextResponse.json({ success: false, message: "Service not found" }, { status: 404 });
     }
@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     const collection = db.collection("Nashville_Services");
     const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(id) },
       { $set: { ...data, updatedAt: new Date() } }
     );
     if (result.matchedCount === 0) {
@@ -102,7 +102,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
     const collection = db.collection("Nashville_Services");
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    const result = await collection.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
     if (result.deletedCount === 0) {
       return NextResponse.json({ success: false, message: "Service not found" }, { status: 404 });
     }

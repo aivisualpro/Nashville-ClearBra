@@ -4,6 +4,7 @@
  * Data is revalidated every 30s (stale-while-revalidate pattern).
  */
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 import { unstable_cache } from "next/cache";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,13 +65,12 @@ async function _fetchTeamMembers(): Promise<Doc[]> {
 }
 
 async function _fetchTeamMember(id: string): Promise<Doc | null> {
-  const { ObjectId } = await import("mongodb");
-  const mongoose = await dbConnect();
-  const db = mongoose.connection.db;
+  const db_mongoose = await dbConnect();
+  const db = db_mongoose.connection.db;
   if (!db) return null;
   const doc = await db
     .collection("Nashville_Users")
-    .findOne({ _id: new ObjectId(id) });
+    .findOne({ _id: new mongoose.Types.ObjectId(id) });
   return doc ? serialize(doc) : null;
 }
 

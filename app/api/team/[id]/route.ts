@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
     const collection = db.collection("Nashville_Users");
-    const user = await collection.findOne({ _id: new ObjectId(id) });
+    const user = await collection.findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!user) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
     }
@@ -66,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     const collection = db.collection("Nashville_Users");
     const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(id) },
       { $set: { ...parsed.data, updatedAt: new Date() } }
     );
     if (result.matchedCount === 0) {

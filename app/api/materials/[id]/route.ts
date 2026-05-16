@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import mongoose from "mongoose";
 import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!db) {
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
-    const doc = await db.collection("Nashville_Materials").findOne({ _id: new ObjectId(id) });
+    const doc = await db.collection("Nashville_Materials").findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!doc) {
       return NextResponse.json({ success: false, message: "Material not found" }, { status: 404 });
     }
@@ -69,7 +69,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
     const result = await db.collection("Nashville_Materials").updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(id) },
       { $set: { ...data, updatedAt: new Date() } }
     );
     if (result.matchedCount === 0) {
@@ -94,7 +94,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!db) {
       return NextResponse.json({ success: false, message: "Database not connected" }, { status: 500 });
     }
-    const result = await db.collection("Nashville_Materials").deleteOne({ _id: new ObjectId(id) });
+    const result = await db.collection("Nashville_Materials").deleteOne({ _id: new mongoose.Types.ObjectId(id) });
     if (result.deletedCount === 0) {
       return NextResponse.json({ success: false, message: "Material not found" }, { status: 404 });
     }
