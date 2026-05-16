@@ -17,11 +17,19 @@ export function JobsClient({ initialData }: { initialData: JobRecord[] }) {
   const [logOpen, setLogOpen] = React.useState(false);
   const [activeLogs, setActiveLogs] = React.useState<Array<{ userId: string | null; timestamp: string; field: string; from: unknown; to: unknown }>>([]);
   const [activeRo, setActiveRo] = React.useState("");
+  // Sync when navigating back with fresh SSR data
+  React.useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
 
   // Auto-poll for jobs with "generating" PDF status
+  const generatingRef = React.useRef(false);
   React.useEffect(() => {
-    const hasGenerating = data.some((row) => row.jobOrderPdf === "generating");
-    if (!hasGenerating) return;
+    generatingRef.current = data.some((row) => row.jobOrderPdf === "generating");
+  }, [data]);
+
+  React.useEffect(() => {
+    if (!generatingRef.current) return;
 
     const interval = setInterval(async () => {
       try {
@@ -36,7 +44,8 @@ export function JobsClient({ initialData }: { initialData: JobRecord[] }) {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
 
   // Fixed column definitions for Jobs table
   const fixedCols: DataTableColumn<JobRecord>[] = React.useMemo(() => [

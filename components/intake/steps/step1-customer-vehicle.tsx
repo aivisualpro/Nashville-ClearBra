@@ -12,11 +12,15 @@ function YearCombobox({ value, onChange }: { value: string; onChange: (v: string
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, []);
 
   const filtered = React.useMemo(() => {
@@ -44,6 +48,7 @@ function YearCombobox({ value, onChange }: { value: string; onChange: (v: string
                   y === value ? "bg-accent font-medium" : "hover:bg-muted"
                 }`}
                 onClick={() => { onChange(y); setOpen(false); setSearch(""); }}
+                onTouchEnd={(e) => { e.preventDefault(); onChange(y); setOpen(false); setSearch(""); }}
               >
                 {y}
               </button>
@@ -172,7 +177,7 @@ export function Step1CustomerVehicle({ data, update }: Props) {
         <div className="ncb-form-grid ncb-form-grid--4">
           <div className="ncb-field">
             <label className="ncb-label">Year</label>
-            <YearCombobox value={v("vYear") || "2026"} onChange={(val) => update({ vYear: val })} />
+            <YearCombobox value={v("vYear")} onChange={(val) => update({ vYear: val })} />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Make</label>

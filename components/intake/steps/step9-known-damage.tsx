@@ -1,6 +1,13 @@
 "use client";
-import { useRef, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { IntakeData } from "../intake-wizard";
+import type { DamagePin } from "./car-damage-marker-types";
+
+// SSR off — Three.js needs `window`
+const CarDamageMarker = dynamic(
+  () => import("@/components/intake/car-damage-marker"),
+  { ssr: false, loading: () => <div style={{ minHeight: 400, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>Loading 3D viewer…</div> }
+);
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -9,107 +16,21 @@ export function Step9KnownDamage({ data, update }: Props) {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     update({ [k]: e.target.value });
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width = canvas.offsetWidth * 2;
-    canvas.height = canvas.offsetHeight * 2;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(2, 2);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
-
-  const getPos = (e: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
-  };
-
-  const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
-    setIsDrawing(true);
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const { x, y } = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  };
-
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const { x, y } = getPos(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
-  const stopDraw = () => setIsDrawing(false);
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  };
+  const pins = (data.damagePins as DamagePin[] | undefined) || [];
 
   return (
     <>
       <div className="ncb-info-banner">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="10" opacity="0.2"/><text x="10" y="14" textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor">i</text></svg>
-        Please mark any damage you are aware of. Draw directly on the vehicle diagram below.
+        Click on the 3D car model to mark damage locations. Use the panel on the right to describe each mark.
       </div>
 
       <div className="ncb-card" style={{ marginTop: "1rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-          <div className="ncb-card-title">MARK KNOWN DAMAGE</div>
-          <button
-            type="button"
-            onClick={clearCanvas}
-            style={{
-              fontSize: "0.75rem", padding: "0.25rem 0.75rem",
-              border: "1px solid #d1d5db", borderRadius: "0.375rem",
-              background: "#fff", color: "#6b7280", cursor: "pointer",
-            }}
-          >
-            Clear Drawing
-          </button>
-        </div>
-        <div
-          className="ncb-damage-canvas-wrap"
-          style={{
-            backgroundImage: "url(/car-skeleton.png)",
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={stopDraw}
-            onMouseLeave={stopDraw}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={stopDraw}
-            style={{ cursor: "crosshair" }}
-          />
-        </div>
+        <div className="ncb-card-title" style={{ marginBottom: "0.75rem" }}>MARK KNOWN DAMAGE</div>
+        <CarDamageMarker
+          pins={pins}
+          onChange={(newPins: DamagePin[]) => update({ damagePins: newPins })}
+        />
       </div>
 
       <div className="ncb-card">

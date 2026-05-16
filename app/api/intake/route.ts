@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
       status: "New",
       source: "Intake Form",
+      jobOrderPdf: "generating",
     };
 
     const result = await collection.insertOne(record);
