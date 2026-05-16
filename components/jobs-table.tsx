@@ -63,13 +63,8 @@ function buildColumns(data: JobRecord[]): ColumnDef<JobRecord>[] {
   // Collect all unique keys across every document
   const keySet = new Set<string>();
   data.forEach((row) => Object.keys(row).forEach((k) => keySet.add(k)));
-
-  // Sort keys: _id first, then alphabetical
-  const keys = Array.from(keySet).sort((a, b) => {
-    if (a === "_id") return -1;
-    if (b === "_id") return 1;
-    return a.localeCompare(b);
-  });
+  keySet.delete("_id");
+  const keys = Array.from(keySet).sort((a, b) => a.localeCompare(b));
 
   return keys.map((key) => ({
     accessorKey: key,

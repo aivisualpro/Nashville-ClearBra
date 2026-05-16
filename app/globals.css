@@ -2,6 +2,31 @@
 @import "tw-animate-css";
 @import "./intake.css";
 
+html, body {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Fixed layout: header 8% + scrollable main 92% */
+[data-slot="sidebar-inset"] {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+[data-slot="sidebar-inset"] > header {
+  flex: 0 0 8%;
+  min-height: 0;
+}
+
+[data-slot="sidebar-inset"] > div:first-of-type {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

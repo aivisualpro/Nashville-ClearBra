@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import "./globals.css";
 
@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   title: "Nashville ClearBra",
   description:
     "Nashville ClearBra — premium paint protection film (PPF), ceramic coating, and window tinting services in Nashville, TN. Protect your vehicle with the best clear bra installation in Middle Tennessee.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Nashville ClearBra",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#E8601C",
 };
 
 export default async function RootLayout({
@@ -27,9 +37,14 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body
         className={cn(
-          "bg-background overscroll-none font-sans antialiased",
+          "bg-background overscroll-none font-sans antialiased p-4 h-screen overflow-hidden flex flex-col",
           activeThemeValue ? `theme-${activeThemeValue}` : "",
           isScaled ? "theme-scaled" : ""
         )}
@@ -48,6 +63,11 @@ export default async function RootLayout({
             </ActiveThemeProvider>
           </AuthProvider>
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`
+          }}
+        />
       </body>
     </html>
   );

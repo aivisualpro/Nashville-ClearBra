@@ -6,11 +6,14 @@ import {
   IconDashboard,
   IconFileDescription,
   IconInnerShadowTop,
+  IconMoon,
   IconPackage,
   IconSettings,
+  IconSun,
   IconTool,
   IconUsers,
 } from "@tabler/icons-react";
+import { useTheme } from "next-themes";
 
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -68,6 +71,25 @@ const data = {
   ],
 };
 
+function SidebarModeSwitcher() {
+  const { setTheme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          tooltip={isDark ? "Light Mode" : "Dark Mode"}
+        >
+          {isDark ? <IconSun className="!size-5" /> : <IconMoon className="!size-5" />}
+          <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -91,6 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <SidebarModeSwitcher />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
@@ -98,4 +121,3 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
-

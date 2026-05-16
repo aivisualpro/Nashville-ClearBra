@@ -29,19 +29,49 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type DataRecord = Record<string, any>;
 
-function buildColumns(data: DataRecord[]): ColumnDef<DataRecord>[] {
+function buildColumns(data: DataRecord[], columnOrder?: string[], avatarField?: string, currencyFields?: string[]): ColumnDef<DataRecord>[] {
   if (data.length === 0) return [];
   const keySet = new Set<string>();
   data.forEach((row) => Object.keys(row).forEach((k) => keySet.add(k)));
-  const keys = Array.from(keySet).sort((a, b) => {
-    if (a === "_id") return -1;
-    if (b === "_id") return 1;
-    return a.localeCompare(b);
-  });
+  keySet.delete("_id");
+  if (avatarField) keySet.delete(avatarField);
+  const currencySet = new Set(currencyFields || []);
+  let keys: string[];
+  if (columnOrder) {
+    const filtered = columnOrder.filter((k) => k !== avatarField);
+    const ordered = filtered.filter((k) => keySet.has(k));
+    const remaining = Array.from(keySet).filter((k) => !filtered.includes(k)).sort((a, b) => a.localeCompare(b));
+    keys = [...ordered, ...remaining];
+  } else {
+    keys = Array.from(keySet).sort((a, b) => a.localeCompare(b));
+  }
   return keys.map((key) => ({
     accessorKey: key,
     header: formatHeader(key),
-    cell: ({ row }) => <CellRenderer value={row.getValue(key)} />,
+    cell: ({ row }) => {
+      // Currency formatting
+      if (currencySet.has(key)) {
+        const val = row.getValue(key);
+        if (val == null) return <span className="text-muted-foreground italic">—</span>;
+        return <span className="tabular-nums">${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+      }
+      // Avatar in first column
+      if (avatarField && key === keys[0]) {
+        const imgUrl = row.original[avatarField] as string | undefined;
+        const isValidUrl = imgUrl && imgUrl.startsWith("http");
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {isValidUrl ? (
+              <img src={imgUrl} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#e5e7eb", flexShrink: 0 }} />
+            )}
+            <CellRenderer value={row.getValue(key)} />
+          </div>
+        );
+      }
+      return <CellRenderer value={row.getValue(key)} />;
+    },
   }));
 }
 
@@ -71,14 +101,20 @@ interface GenericDataTableProps {
   apiEndpoint: string;
   emptyLabel: string;
   entityLabel: string;
+  columnOrder?: string[];
+  avatarField?: string;
+  rowLinkPrefix?: string;
+  currencyFields?: string[];
+  defaultSort?: { id: string; desc: boolean };
+  toolbarPortal?: (toolbar: React.ReactNode) => void;
 }
 
-export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel }: GenericDataTableProps) {
+export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnOrder, avatarField, rowLinkPrefix, currencyFields, defaultSort, toolbarPortal }: GenericDataTableProps) {
   const [data, setData] = React.useState<DataRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = React.useState("");
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>(defaultSort ? [defaultSort] : []);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 });
@@ -97,7 +133,7 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel }: Gener
 
   React.useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = React.useMemo(() => buildColumns(data), [data]);
+  const columns = React.useMemo(() => buildColumns(data, columnOrder, avatarField, currencyFields), [data, columnOrder, avatarField, currencyFields]);
 
   const table = useReactTable({
     data, columns,
@@ -107,6 +143,37 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel }: Gener
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(), getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(), getSortedRowModel: getSortedRowModel(),
+  });
+
+  // Toolbar elements for header portal
+  const toolbarEl = (
+    <>
+      <div className="relative">
+        <IconSearch className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
+        <Input placeholder={`Search ${entityLabel}…`} value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="h-8 w-48 lg:w-64 pl-8 text-sm" />
+      </div>
+      <Badge variant="secondary" className="text-muted-foreground text-xs">{table.getFilteredRowModel().rows.length} records</Badge>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm"><IconLayoutColumns className="size-4" /><span className="hidden lg:inline">Columns</span><IconChevronDown className="size-3" /></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-auto">
+          {table.getAllColumns().filter((c) => c.getCanHide()).map((col) => (
+            <DropdownMenuCheckboxItem key={col.id} className="capitalize" checked={col.getIsVisible()} onCheckedChange={(v) => col.toggleVisibility(!!v)}>
+              {formatHeader(col.id)}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="outline" size="sm" onClick={fetchData}><IconRefresh className="size-4" /></Button>
+    </>
+  );
+
+  // Push toolbar into header via portal callback
+  React.useEffect(() => {
+    if (toolbarPortal && !loading && !error && data.length > 0) {
+      toolbarPortal(toolbarEl);
+    }
   });
 
   if (loading) return (
@@ -134,30 +201,33 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel }: Gener
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <IconSearch className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-            <Input placeholder={`Search ${entityLabel}…`} value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="h-9 w-64 pl-8" />
+      {/* Inline toolbar fallback when no portal */}
+      {!toolbarPortal && (
+        <div className="flex items-center justify-between px-4 lg:px-6">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <IconSearch className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
+              <Input placeholder={`Search ${entityLabel}…`} value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} className="h-9 w-64 pl-8" />
+            </div>
+            <Badge variant="secondary" className="text-muted-foreground text-xs">{table.getFilteredRowModel().rows.length} records</Badge>
           </div>
-          <Badge variant="secondary" className="text-muted-foreground text-xs">{table.getFilteredRowModel().rows.length} records</Badge>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm"><IconLayoutColumns /><span className="hidden lg:inline">Columns</span><IconChevronDown /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-auto">
+                {table.getAllColumns().filter((c) => c.getCanHide()).map((col) => (
+                  <DropdownMenuCheckboxItem key={col.id} className="capitalize" checked={col.getIsVisible()} onCheckedChange={(v) => col.toggleVisibility(!!v)}>
+                    {formatHeader(col.id)}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={fetchData}><IconRefresh className="size-4" /><span className="hidden lg:inline">Refresh</span></Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm"><IconLayoutColumns /><span className="hidden lg:inline">Columns</span><IconChevronDown /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-auto">
-              {table.getAllColumns().filter((c) => c.getCanHide()).map((col) => (
-                <DropdownMenuCheckboxItem key={col.id} className="capitalize" checked={col.getIsVisible()} onCheckedChange={(v) => col.toggleVisibility(!!v)}>
-                  {formatHeader(col.id)}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm" onClick={fetchData}><IconRefresh className="size-4" /><span className="hidden lg:inline">Refresh</span></Button>
-        </div>
-      </div>
+      )}
 
       <div className="overflow-auto px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
@@ -179,7 +249,11 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel }: Gener
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className={rowLinkPrefix ? "cursor-pointer hover:bg-muted/50 transition-colors" : ""}
+                    onClick={rowLinkPrefix ? () => { window.location.href = `${rowLinkPrefix}/${row.original._id}`; } : undefined}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="text-nowrap">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
