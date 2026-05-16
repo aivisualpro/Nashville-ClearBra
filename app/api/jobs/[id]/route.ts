@@ -86,10 +86,10 @@ export async function PUT(
       }
     }
 
-    // Update the document
+    // Update the document — mark PDF as regenerating
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateOp: any = {
-      $set: { ...updateData, updatedAt: new Date() },
+      $set: { ...updateData, updatedAt: new Date(), jobOrderPdf: "generating" },
     };
     if (newLogs.length > 0) {
       updateOp.$push = { changeLogs: { $each: newLogs } };

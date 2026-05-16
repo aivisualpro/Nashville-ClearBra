@@ -62,13 +62,17 @@ export function OptionSelect({
     return () => { cancelled = true; };
   }, [optionSetName]);
 
-  // Close on outside click
+  // Close on outside click/touch
   React.useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
   }, []);
 
   const selected = options.find((o) => o._id === value);
@@ -118,7 +122,8 @@ export function OptionSelect({
         ref={triggerRef}
         type="button"
         className="ncb-select flex items-center gap-2 w-full text-left"
-        onClick={() => { setOpen(!open); setSearch(""); }}
+        onClick={(e) => { e.preventDefault(); setOpen(!open); setSearch(""); }}
+        onTouchEnd={(e) => { e.preventDefault(); setOpen(!open); setSearch(""); }}
       >
         {selected ? (
           <span

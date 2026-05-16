@@ -155,28 +155,32 @@
 .ncb-form-grid--4 { grid-template-columns: repeat(4, 1fr); }
 .ncb-form-grid--5 { grid-template-columns: repeat(5, 1fr); }
 
-/* Tablet landscape ~1024px: 4/5-col → 2 cols */
+/* Tablet landscape ~1024px: 4/5-col → 2 cols, 3-col stays */
 @media (max-width: 1024px) {
   .ncb-form-grid--4, .ncb-form-grid--5 { grid-template-columns: repeat(2, 1fr); }
 }
-/* Tablet portrait ~768px: 3-col → 2 cols */
+/* Tablet portrait ~768px: everything → 2 cols max */
 @media (max-width: 768px) {
-  .ncb-form-grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .ncb-form-grid--3, .ncb-form-grid--4, .ncb-form-grid--5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-/* Mobile ~480px: everything → 1 col */
-@media (max-width: 480px) {
-  .ncb-form-grid--2, .ncb-form-grid--3,
-  .ncb-form-grid--4, .ncb-form-grid--5 { grid-template-columns: 1fr; }
+/* Small tablet / large phone ~600px: everything → 1 col */
+@media (max-width: 600px) {
+  .ncb-form-grid, .ncb-form-grid--2, .ncb-form-grid--3,
+  .ncb-form-grid--4, .ncb-form-grid--5 {
+    grid-template-columns: 1fr;
+  }
 }
-.ncb-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.ncb-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; overflow: hidden; }
 .ncb-label {
   font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ncb-input, .ncb-select, .ncb-textarea {
   padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
   font-size: 0.875rem; color: #1f2937; background: #fff; transition: border-color 0.15s;
-  width: 100%; box-sizing: border-box; min-width: 0;
+  width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden; text-overflow: ellipsis;
 }
 .ncb-input:focus, .ncb-select:focus, .ncb-textarea:focus {
   outline: none; border-color: #E77000; box-shadow: 0 0 0 3px rgba(231,112,0,0.1);
