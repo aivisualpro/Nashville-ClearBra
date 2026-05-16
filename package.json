@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "PORT=$(node -e \"const h=require('crypto').createHash('md5').update(require('path').basename(__dirname)).digest('hex');console.log(3000+parseInt(h.slice(0,4),16)%7000)\") next dev",
+    "dev": "PORT=9569 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -32,6 +32,7 @@
     "lucide-react": "^0.562.0",
     "mongoose": "^9.6.2",
     "next": "16.1.1",
+    "next-auth": "^4.24.14",
     "next-themes": "^0.4.6",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
