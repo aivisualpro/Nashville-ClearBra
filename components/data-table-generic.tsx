@@ -96,6 +96,7 @@ function CellRenderer({ value }: { value: unknown }) {
   if (typeof value === "object") return <Badge variant="outline" className="text-muted-foreground">Object</Badge>;
   return <span>{String(value)}</span>;
 }
+import ReactDOM from "react-dom";
 
 interface GenericDataTableProps {
   apiEndpoint: string;
@@ -106,18 +107,40 @@ interface GenericDataTableProps {
   rowLinkPrefix?: string;
   currencyFields?: string[];
   defaultSort?: { id: string; desc: boolean };
-  toolbarPortal?: (toolbar: React.ReactNode) => void;
+  toolbarPortalId?: string;
 }
 
-export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnOrder, avatarField, rowLinkPrefix, currencyFields, defaultSort, toolbarPortal }: GenericDataTableProps) {
+export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnOrder, avatarField, rowLinkPrefix, currencyFields, defaultSort, toolbarPortalId }: GenericDataTableProps) {
+  // Storage key for column prefs (per-user per-table)
+  const storageKey = `ncb-cols-${entityLabel.replace(/\s+/g, "_")}`;
+
   const [data, setData] = React.useState<DataRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [sorting, setSorting] = React.useState<SortingState>(defaultSort ? [defaultSort] : []);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 20 });
+  const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null);
+
+  // Save column visibility to localStorage whenever it changes
+  React.useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(columnVisibility)); } catch {}
+  }, [columnVisibility, storageKey]);
+
+  React.useEffect(() => {
+    if (toolbarPortalId) {
+      const el = document.getElementById(toolbarPortalId);
+      if (el) setPortalTarget(el);
+    }
+  }, [toolbarPortalId]);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true); setError(null);
@@ -145,8 +168,8 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnO
     getPaginationRowModel: getPaginationRowModel(), getSortedRowModel: getSortedRowModel(),
   });
 
-  // Toolbar elements for header portal
-  const toolbarEl = (
+  // Toolbar to render in header portal
+  const toolbarEl = !loading && !error && data.length > 0 ? (
     <>
       <div className="relative">
         <IconSearch className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
@@ -167,14 +190,7 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnO
       </DropdownMenu>
       <Button variant="outline" size="sm" onClick={fetchData}><IconRefresh className="size-4" /></Button>
     </>
-  );
-
-  // Push toolbar into header via portal callback
-  React.useEffect(() => {
-    if (toolbarPortal && !loading && !error && data.length > 0) {
-      toolbarPortal(toolbarEl);
-    }
-  });
+  ) : null;
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">
@@ -200,10 +216,12 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnO
   );
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col flex-1 min-h-0">
+      {/* Portal toolbar into header */}
+      {portalTarget && toolbarEl && ReactDOM.createPortal(toolbarEl, portalTarget)}
       {/* Inline toolbar fallback when no portal */}
-      {!toolbarPortal && (
-        <div className="flex items-center justify-between px-4 lg:px-6">
+      {!toolbarPortalId && (
+        <div className="flex items-center justify-between px-4 lg:px-6 py-2 shrink-0">
           <div className="flex items-center gap-2">
             <div className="relative">
               <IconSearch className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
@@ -229,7 +247,7 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnO
         </div>
       )}
 
-      <div className="overflow-auto px-4 lg:px-6">
+      <div className="flex-1 min-h-0 overflow-auto px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
@@ -267,7 +285,8 @@ export function GenericDataTable({ apiEndpoint, emptyLabel, entityLabel, columnO
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-4 lg:px-6">
+      {/* Pinned footer */}
+      <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-t shrink-0">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">{table.getFilteredRowModel().rows.length} total row(s)</div>
         <div className="flex w-full items-center gap-8 lg:w-fit">
           <div className="hidden items-center gap-2 lg:flex">

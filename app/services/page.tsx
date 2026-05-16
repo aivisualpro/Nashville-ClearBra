@@ -10,11 +10,16 @@ export default function ServicesPage() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader title="Services" toolbarPortalId="services-toolbar" />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <GenericDataTable apiEndpoint="/api/services" emptyLabel="Nashville_Services" entityLabel="services" />
+              <GenericDataTable
+                apiEndpoint="/api/services"
+                emptyLabel="Nashville_Services"
+                entityLabel="services"
+                toolbarPortalId="services-toolbar"
+              />
             </div>
           </div>
         </div>

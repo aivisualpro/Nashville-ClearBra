@@ -44,7 +44,7 @@ export default async function RootLayout({
       </head>
       <body
         className={cn(
-          "bg-background overscroll-none font-sans antialiased p-4 h-screen overflow-hidden flex flex-col",
+          "bg-background overscroll-none font-sans antialiased h-screen overflow-hidden flex flex-col",
           activeThemeValue ? `theme-${activeThemeValue}` : "",
           isScaled ? "theme-scaled" : ""
         )}

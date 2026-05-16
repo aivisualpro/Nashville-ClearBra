@@ -97,33 +97,30 @@ export default function TeamProfilePage() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader title={user?.name || "Team"}>
+          <Button variant="ghost" size="sm" onClick={() => router.push("/team")}>
+            <IconArrowLeft className="size-4" /> Back
+          </Button>
+          {user && !loading && (
+            editing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={cancelEdit} disabled={saving}>
+                  <IconX className="size-4" /> Cancel
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  <IconDeviceFloppy className="size-4" /> {saving ? "Saving…" : "Save"}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={startEdit}>
+                <IconEdit className="size-4" /> Edit
+              </Button>
+            )
+          )}
+        </SiteHeader>
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-6 py-4 px-4 md:py-6 lg:px-6">
-
-              {/* Top bar */}
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => router.push("/team")}>
-                  <IconArrowLeft className="size-4" /> Back to Team
-                </Button>
-                {user && !loading && (
-                  editing ? (
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={cancelEdit} disabled={saving}>
-                        <IconX className="size-4" /> Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSave} disabled={saving}>
-                        <IconDeviceFloppy className="size-4" /> {saving ? "Saving…" : "Save"}
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={startEdit}>
-                      <IconEdit className="size-4" /> Edit Profile
-                    </Button>
-                  )
-                )}
-              </div>
 
               {loading ? (
                 <div className="flex items-center justify-center py-24">
@@ -139,17 +136,21 @@ export default function TeamProfilePage() {
                   <div className="rounded-xl border bg-card p-6 flex items-center gap-6">
                     {/* Avatar with upload/delete in edit mode */}
                     <div className="relative">
-                      {(editing ? form.profileImage : user.profileImage) ? (
-                        <img
-                          src={editing ? form.profileImage : user.profileImage}
-                          alt={user.name || "Profile"}
-                          className="size-24 rounded-full object-cover border-2 border-primary/20"
-                        />
-                      ) : (
-                        <div className="size-24 rounded-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                          {(user.name || "?").charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      {(() => {
+                        const imgSrc = editing ? form.profileImage : user.profileImage;
+                        const isValid = imgSrc && typeof imgSrc === "string" && imgSrc.startsWith("http");
+                        return isValid ? (
+                          <img
+                            src={imgSrc}
+                            alt={user.name || "Profile"}
+                            className="size-24 rounded-full object-cover border-2 border-primary/20"
+                          />
+                        ) : (
+                          <div className="size-24 rounded-full bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                            {(user.name || "?").charAt(0).toUpperCase()}
+                          </div>
+                        );
+                      })()}
                       {editing && (
                         <>
                           <input
