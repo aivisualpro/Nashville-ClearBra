@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
+import { requireAuth } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
+
+const createTeamMemberSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  email: z.string().email("Valid email is required").max(200),
+  phone: z.string().max(50).optional().default(""),
+  roles: z.string().max(200).optional().default(""),
+  status: z.enum(["Active", "Inactive"]).optional().default("Active"),
+});
 
 export async function GET() {
   try {
@@ -43,13 +53,16 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAuth();
+  if (!auth.authorized) return auth.response;
+
   try {
     const body = await req.json();
 
-    // Validate required fields
-    if (!body.name || !body.email) {
+    const parsed = createTeamMemberSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: "Name and email are required" },
+        { success: false, message: parsed.error.issues[0]?.message || "Validation failed" },
         { status: 400 }
       );
     }
@@ -67,11 +80,7 @@ export async function POST(req: Request) {
     const collection = db.collection("Nashville_Users");
 
     const doc = {
-      name: body.name,
-      email: body.email,
-      phone: body.phone || "",
-      roles: body.roles || "",
-      status: body.status || "Active",
+      ...parsed.data,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

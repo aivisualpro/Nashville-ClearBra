@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -146,10 +147,8 @@ function CellRenderer({ value }: { value: unknown }) {
   return <span>{String(value)}</span>;
 }
 
-export function JobsTable() {
-  const [data, setData] = React.useState<JobRecord[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+export function JobsTable({ initialData = [] }: { initialData?: JobRecord[] }) {
+  const [data, setData] = React.useState<JobRecord[]>(initialData);
   const [globalFilter, setGlobalFilter] = React.useState("");
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -163,27 +162,12 @@ export function JobsTable() {
     pageSize: 20,
   });
 
-  const fetchJobs = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/jobs");
-      const json = await res.json();
-      if (json.success) {
-        setData(json.data);
-      } else {
-        setError(json.message || "Failed to fetch jobs");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const router = useRouter();
 
+  // Sync with server data when initialData changes (after router.refresh)
   React.useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    setData(initialData);
+  }, [initialData]);
 
   const columns = React.useMemo(() => buildColumns(data), [data]);
 
@@ -208,31 +192,6 @@ export function JobsTable() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  // ── Loading state ────────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3">
-          <IconRefresh className="text-muted-foreground size-8 animate-spin" />
-          <p className="text-muted-foreground text-sm">Loading jobs…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Error state ──────────────────────────────────────────────────────
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24">
-        <p className="text-destructive text-sm">{error}</p>
-        <Button variant="outline" size="sm" onClick={fetchJobs}>
-          <IconRefresh className="size-4" />
-          Retry
-        </Button>
-      </div>
-    );
-  }
-
   // ── Empty state ──────────────────────────────────────────────────────
   if (data.length === 0) {
     return (
@@ -240,10 +199,6 @@ export function JobsTable() {
         <p className="text-muted-foreground text-sm">
           No jobs found in <code className="text-xs">Nashville_Jobs</code>.
         </p>
-        <Button variant="outline" size="sm" onClick={fetchJobs}>
-          <IconRefresh className="size-4" />
-          Refresh
-        </Button>
       </div>
     );
   }
@@ -294,7 +249,7 @@ export function JobsTable() {
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" onClick={fetchJobs}>
+          <Button variant="outline" size="sm" onClick={() => router.refresh()}>
             <IconRefresh className="size-4" />
             <span className="hidden lg:inline">Refresh</span>
           </Button>
