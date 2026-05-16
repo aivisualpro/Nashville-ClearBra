@@ -37,6 +37,7 @@ export function NavUser() {
     email: session?.user?.email || "",
     role: session?.user?.role || "Team Member",
     avatar: session?.user?.profileImage || session?.user?.image || "",
+    userId: session?.user?.userId || "",
   }
 
   const initials = user.name
@@ -90,7 +91,7 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/profile">
+              <Link href={user.userId ? `/team/${user.userId}` : "/team"}>
                 <IconUserCircle />
                 Profile
               </Link>

@@ -1,5 +1,6 @@
 "use client";
 import { IntakeData } from "../intake-wizard";
+import { OptionSelect } from "@/components/ui/option-select";
 
 type Props = { data: IntakeData; update: (f: Record<string, unknown>) => void };
 
@@ -41,17 +42,33 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">How Heard of Us</label>
-            <select className="ncb-select" value={v("howHeard")} onChange={set("howHeard")}>
-              <option value="">Select...</option>
-              <option>Google Search</option><option>Instagram</option><option>TikTok</option>
-              <option>Referral</option><option>Repeat Customer</option><option>Other</option>
-            </select>
+            <OptionSelect
+              optionSetName="Lead Source"
+              value={v("howHeardId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ howHeardId: opt._id, howHeard: opt.value });
+                } else {
+                  update({ howHeardId: "", howHeard: "" });
+                }
+              }}
+              placeholder="Select lead source…"
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">XPEL Referral Program</label>
-            <select className="ncb-select" value={v("xpelReferral")} onChange={set("xpelReferral")}>
-              <option value="No">No</option><option value="Yes">Yes</option>
-            </select>
+            <OptionSelect
+              optionSetName="YesNo"
+              value={v("xpelReferralId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ xpelReferralId: opt._id, xpelReferral: opt.value });
+                } else {
+                  update({ xpelReferralId: "", xpelReferral: "" });
+                }
+              }}
+              placeholder="Select…"
+            />
           </div>
         </div>
       </div>
@@ -69,7 +86,19 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Phone</label>
-            <input className="ncb-input" placeholder="(615) 555-0198" value={v("clientPhone")} onChange={set("clientPhone")} />
+            <input
+              className="ncb-input"
+              placeholder="(615) 555-0198"
+              value={v("clientPhone")}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                let formatted = "";
+                if (digits.length > 0) formatted = `(${digits.slice(0, 3)}`;
+                if (digits.length >= 4) formatted += `) ${digits.slice(3, 6)}`;
+                if (digits.length >= 7) formatted += `-${digits.slice(6)}`;
+                update({ clientPhone: formatted });
+              }}
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Email</label>

@@ -11,6 +11,7 @@ declare module "next-auth" {
       image?: string | null;
       role?: string;
       profileImage?: string;
+      userId?: string;
     };
   }
 }
@@ -60,11 +61,12 @@ export const authOptions: NextAuthOptions = {
         if (db && session.user?.email) {
           const dbUser = await db.collection("Nashville_Users").findOne(
             { email: session.user.email },
-            { projection: { roles: 1, profileImage: 1 } }
+            { projection: { roles: 1, profileImage: 1, _id: 1 } }
           );
           if (dbUser) {
             session.user.role = dbUser.roles || "Team Member";
             session.user.profileImage = dbUser.profileImage || "";
+            session.user.userId = dbUser._id.toString();
           }
         }
       } catch (e) {
