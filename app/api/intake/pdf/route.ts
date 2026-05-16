@@ -3,6 +3,7 @@ import { processTemplate } from "@/lib/google-docs";
 import { buildReplacements } from "@/lib/pdf-replacements";
 import { uploadPdfToCloudinary } from "@/lib/cloudinary-pdf";
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -31,12 +32,11 @@ export async function POST(req: NextRequest) {
 
     // Update the DB record if we have a job ID
     if (jobId) {
-      const mongoose = await dbConnect();
-      const db = mongoose.connection.db;
+      const conn = await dbConnect();
+      const db = conn.connection.db;
       if (db) {
-        const { ObjectId } = await import("mongodb");
         await db.collection("Nashville_Jobs").updateOne(
-          { _id: new ObjectId(jobId) },
+          { _id: new mongoose.Types.ObjectId(jobId) },
           { $set: { jobOrderPdf: pdfUrl } }
         );
       }

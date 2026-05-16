@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
+import mongoose from "mongoose";
 import { processTemplate } from "@/lib/google-docs";
 import { uploadPdfToCloudinary } from "@/lib/cloudinary-pdf";
 import { buildReplacements } from "@/lib/pdf-replacements";
@@ -63,9 +64,8 @@ async function generateAndStorePdf(data: Record<string, any>, jobId: string, col
   const pdfUrl = await uploadPdfToCloudinary(pdfBuffer, `NCB-${ro}-${jobId}`);
 
   // Store the PDF URL on the job document
-  const { ObjectId } = await import("mongodb");
   await collection.updateOne(
-    { _id: new ObjectId(jobId) },
+    { _id: new mongoose.Types.ObjectId(jobId) },
     { $set: { jobOrderPdf: pdfUrl } }
   );
 

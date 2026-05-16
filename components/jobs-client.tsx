@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DataTable, DataTableColumn } from "@/components/data-table";
 import { ChangeLogDialog } from "@/components/change-log-dialog";
-import { Eye, Pencil, FileText, History } from "lucide-react";
+import { Eye, Pencil, FileText, History, Loader2 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JobRecord = Record<string, any>;
@@ -17,6 +17,26 @@ export function JobsClient({ initialData }: { initialData: JobRecord[] }) {
   const [logOpen, setLogOpen] = React.useState(false);
   const [activeLogs, setActiveLogs] = React.useState<Array<{ userId: string | null; timestamp: string; field: string; from: unknown; to: unknown }>>([]);
   const [activeRo, setActiveRo] = React.useState("");
+
+  // Auto-poll for jobs with "generating" PDF status
+  React.useEffect(() => {
+    const hasGenerating = data.some((row) => row.jobOrderPdf === "generating");
+    if (!hasGenerating) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/jobs");
+        const json = await res.json();
+        if (json.success && json.data) {
+          setData(json.data);
+          const stillGenerating = json.data.some((r: JobRecord) => r.jobOrderPdf === "generating");
+          if (!stillGenerating) clearInterval(interval);
+        }
+      } catch { /* ignore */ }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [data]);
 
   // Fixed column definitions for Jobs table
   const fixedCols: DataTableColumn<JobRecord>[] = React.useMemo(() => [
@@ -59,22 +79,33 @@ export function JobsClient({ initialData }: { initialData: JobRecord[] }) {
           >
             <Pencil className="size-3.5" />
           </button>
-          <button
-            title={row.jobOrderPdf ? "View PDF" : "PDF not ready"}
-            className={`ncb-action-btn ${!row.jobOrderPdf ? "opacity-40" : ""}`}
-            onClick={() => {
-              if (row.jobOrderPdf) {
-                const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(row.jobOrderPdf)}&embedded=true`;
-                window.open(viewerUrl, "_blank", "noopener,noreferrer");
-              } else {
-                import("sonner").then(({ toast }) =>
-                  toast.info("PDF is being generated. Please refresh in a moment.")
-                );
-              }
-            }}
-          >
-            <FileText className="size-3.5" />
-          </button>
+          {(() => {
+            const pdfReady = row.jobOrderPdf && row.jobOrderPdf !== "generating";
+            const isGenerating = row.jobOrderPdf === "generating";
+            return (
+              <button
+                title={pdfReady ? "View PDF" : isGenerating ? "Generating PDF…" : "PDF not available"}
+                className={`ncb-action-btn ${!pdfReady ? "opacity-40" : ""}`}
+                disabled={isGenerating}
+                onClick={() => {
+                  if (pdfReady) {
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(row.jobOrderPdf)}&embedded=true`;
+                    window.open(viewerUrl, "_blank", "noopener,noreferrer");
+                  } else if (!isGenerating) {
+                    import("sonner").then(({ toast }) =>
+                      toast.info("No PDF available. Edit and save the job to generate one.")
+                    );
+                  }
+                }}
+              >
+                {isGenerating ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <FileText className="size-3.5" />
+                )}
+              </button>
+            );
+          })()}
           <button
             title="Change Log"
             className="ncb-action-btn"

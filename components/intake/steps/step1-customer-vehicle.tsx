@@ -205,12 +205,18 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Color</label>
-            <select className="ncb-select" value={v("vColor")} onChange={set("vColor")}>
-              <option value="">Select</option>
-              {["Pearl White Multi-Coat","Solid Black","Midnight Silver","Deep Blue","Red Multi-Coat","Ultra White","Other"].map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
+            <OptionSelect
+              optionSetName="Vehicle Color"
+              value={v("vColorId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ vColorId: opt._id, vColor: opt.value });
+                } else {
+                  update({ vColorId: "", vColor: "" });
+                }
+              }}
+              placeholder="Select color…"
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Plate</label>
@@ -228,24 +234,48 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Intake Staff</label>
-            <select className="ncb-select" value={v("intakeStaff")} onChange={set("intakeStaff")}>
-              <option value="">Select</option>
-              <option>Mike S.</option><option>Chris T.</option><option>Jake R.</option>
-            </select>
+            <OptionSelect
+              optionSetName="Intake Staff"
+              value={v("intakeStaffId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ intakeStaffId: opt._id, intakeStaff: opt.value });
+                } else {
+                  update({ intakeStaffId: "", intakeStaff: "" });
+                }
+              }}
+              placeholder="Select…"
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Installer</label>
-            <select className="ncb-select" value={v("installer")} onChange={set("installer")}>
-              <option value="">Select</option>
-              <option>Chris T.</option><option>Jake R.</option><option>Mike S.</option>
-            </select>
+            <OptionSelect
+              optionSetName="Installer"
+              value={v("installerId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ installerId: opt._id, installer: opt.value });
+                } else {
+                  update({ installerId: "", installer: "" });
+                }
+              }}
+              placeholder="Select…"
+            />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">IST</label>
-            <select className="ncb-select" value={v("ist")} onChange={set("ist")}>
-              <option value="">Select</option>
-              <option>Jake R.</option><option>Mike S.</option><option>Chris T.</option>
-            </select>
+            <OptionSelect
+              optionSetName="IST"
+              value={v("istId")}
+              onSelect={(opt) => {
+                if (opt) {
+                  update({ istId: opt._id, ist: opt.value });
+                } else {
+                  update({ istId: "", ist: "" });
+                }
+              }}
+              placeholder="Select…"
+            />
           </div>
         </div>
       </div>
