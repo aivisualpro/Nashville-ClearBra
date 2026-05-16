@@ -148,15 +148,21 @@
 .ncb-form-grid--3 { grid-template-columns: repeat(3, 1fr); }
 .ncb-form-grid--4 { grid-template-columns: repeat(4, 1fr); }
 .ncb-form-grid--5 { grid-template-columns: repeat(5, 1fr); }
-@media (max-width: 640px) {
-  .ncb-form-grid--2, .ncb-form-grid--3,
-  .ncb-form-grid--4, .ncb-form-grid--5 { grid-template-columns: 1fr 1fr; }
+
+/* Tablet landscape ~1024px: 4/5-col → 2 cols */
+@media (max-width: 1024px) {
+  .ncb-form-grid--4, .ncb-form-grid--5 { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 420px) {
+/* Tablet portrait ~768px: 3-col → 2 cols */
+@media (max-width: 768px) {
+  .ncb-form-grid--3 { grid-template-columns: repeat(2, 1fr); }
+}
+/* Mobile ~480px: everything → 1 col */
+@media (max-width: 480px) {
   .ncb-form-grid--2, .ncb-form-grid--3,
   .ncb-form-grid--4, .ncb-form-grid--5 { grid-template-columns: 1fr; }
 }
-.ncb-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.ncb-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 .ncb-label {
   font-size: 0.75rem; font-weight: 600; color: #374151; text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -164,7 +170,7 @@
 .ncb-input, .ncb-select, .ncb-textarea {
   padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
   font-size: 0.875rem; color: #1f2937; background: #fff; transition: border-color 0.15s;
-  width: 100%;
+  width: 100%; box-sizing: border-box; min-width: 0;
 }
 .ncb-input:focus, .ncb-select:focus, .ncb-textarea:focus {
   outline: none; border-color: #E8601C; box-shadow: 0 0 0 3px rgba(232,96,28,0.1);

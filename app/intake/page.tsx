@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { IntakeWizard } from "@/components/intake/intake-wizard";
 import { Button } from "@/components/ui/button";
-import { IconLayoutSidebar } from "@tabler/icons-react";
+import { PanelLeft } from "lucide-react";
 
 function IntakeHeaderAuth({ title }: { title: string }) {
   const { toggleSidebar } = useSidebar();
@@ -19,7 +19,7 @@ function IntakeHeaderAuth({ title }: { title: string }) {
         onClick={toggleSidebar}
         aria-label="Toggle sidebar"
       >
-        <IconLayoutSidebar className="size-4" />
+        <PanelLeft className="size-4" />
       </Button>
       <h1 className="flex-1 text-center text-xl font-bold tracking-wide" style={{ color: "#E8601C" }}>
         {title}
