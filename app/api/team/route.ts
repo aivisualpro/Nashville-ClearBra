@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
 import { requireAuth } from "@/lib/api-auth";
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
     };
 
     const result = await collection.insertOne(doc);
+    revalidateTag("team", "default");
 
     return NextResponse.json({
       success: true,

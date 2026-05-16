@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Step1CustomerVehicle } from "./steps/step1-customer-vehicle";
 import { Step2ServiceSelection } from "./steps/step2-service-selection";
@@ -28,10 +28,14 @@ const STEP_TITLES = [
   "Review + Drop-Off Signature",
 ];
 
-export function IntakeWizard() {
+export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title: string) => void }) {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<IntakeData>({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    onStepTitleChange?.(STEP_TITLES[step - 1]);
+  }, [step, onStepTitleChange]);
 
   const update = (fields: Record<string, unknown>) => {
     setData((prev) => ({ ...prev, ...fields }));
@@ -88,51 +92,52 @@ export function IntakeWizard() {
 
   return (
     <>
-      <h1 className="ncb-step-title">{STEP_TITLES[step - 1]}</h1>
-      <p className="ncb-step-subtitle">Step {step} of 10</p>
 
-      {/* Progress */}
-      <div className="ncb-progress">
-        {Array.from({ length: 10 }, (_, i) => {
-          const n = i + 1;
-          return (
-            <div key={n} className="ncb-progress-step">
-              {i > 0 && (
-                <div className={`ncb-progress-line ${n <= step ? "ncb-progress-line--done" : ""}`} />
-              )}
-              <div
-                className={`ncb-progress-circle ${
-                  n === step ? "ncb-progress-circle--active" : n < step ? "ncb-progress-circle--done" : ""
-                }`}
-                onClick={() => n < step && setStep(n)}
-                style={{ cursor: n < step ? "pointer" : "default" }}
-              >
-                {n}
+      {/* Progress + nav inline */}
+      <div className="flex items-center gap-3 justify-center">
+        <button
+          className="ncb-btn-back"
+          onClick={back}
+          disabled={step === 1}
+          style={{ visibility: step === 1 ? "hidden" : "visible", minWidth: 90 }}
+        >
+          ← Previous
+        </button>
+
+        <div className="ncb-progress" style={{ flex: "0 1 auto" }}>
+          {Array.from({ length: 10 }, (_, i) => {
+            const n = i + 1;
+            return (
+              <div key={n} className="ncb-progress-step">
+                {i > 0 && (
+                  <div className={`ncb-progress-line ${n <= step ? "ncb-progress-line--done" : ""}`} />
+                )}
+                <div
+                  className={`ncb-progress-circle ${
+                    n === step ? "ncb-progress-circle--active" : n < step ? "ncb-progress-circle--done" : ""
+                  }`}
+                  onClick={() => n < step && setStep(n)}
+                  style={{ cursor: n < step ? "pointer" : "default" }}
+                >
+                  {n}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {step < 10 ? (
+          <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
+            Next →
+          </button>
+        ) : (
+          <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
+            {submitting ? "Submitting..." : "Submit →"}
+          </button>
+        )}
       </div>
 
       {renderStep()}
-
-      {/* Footer */}
-      <div className="ncb-form-footer">
-        {step > 1 && (
-          <button className="ncb-btn-back" onClick={back}>
-            ← Back
-          </button>
-        )}
-        {step < 10 ? (
-          <button className="ncb-btn-continue" onClick={next} style={step === 1 ? { flex: "1 1 100%" } : undefined}>
-            Continue →
-          </button>
-        ) : (
-          <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting}>
-            {submitting ? "Submitting..." : "Submit Work Order →"}
-          </button>
-        )}
-      </div>
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -81,6 +82,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (result.matchedCount === 0) {
       return NextResponse.json({ success: false, message: "Service not found" }, { status: 404 });
     }
+    revalidateTag("services", "default");
     return NextResponse.json({ success: true, message: "Service updated successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -104,6 +106,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (result.deletedCount === 0) {
       return NextResponse.json({ success: false, message: "Service not found" }, { status: 404 });
     }
+    revalidateTag("services", "default");
     return NextResponse.json({ success: true, message: "Service deleted successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

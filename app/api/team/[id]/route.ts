@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -71,6 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (result.matchedCount === 0) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
     }
+    revalidateTag("team", "default");
     return NextResponse.json({ success: true, message: "User updated successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

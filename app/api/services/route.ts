@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
 import { requireAuth } from "@/lib/api-auth";
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
       updatedAt: new Date(),
     };
     const result = await collection.insertOne(doc);
+    revalidateTag("services", "default");
     return NextResponse.json({ success: true, data: { _id: result.insertedId.toString(), ...doc } });
   } catch (error: unknown) {
     console.error("[POST /api/services] Error:", error);

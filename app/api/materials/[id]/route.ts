@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import dbConnect from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -74,6 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (result.matchedCount === 0) {
       return NextResponse.json({ success: false, message: "Material not found" }, { status: 404 });
     }
+    revalidateTag("materials", "default");
     return NextResponse.json({ success: true, message: "Material updated successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -96,6 +98,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (result.deletedCount === 0) {
       return NextResponse.json({ success: false, message: "Material not found" }, { status: 404 });
     }
+    revalidateTag("materials", "default");
     return NextResponse.json({ success: true, message: "Material deleted successfully" });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

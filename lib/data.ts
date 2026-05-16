@@ -1,22 +1,33 @@
 /**
- * Server-side data fetching functions.
- * These run ONLY on the server (in Server Components / Route Handlers).
- * Data is fetched at render time so the UI never shows a loading spinner.
+ * Server-side data fetching functions with caching.
+ * Uses unstable_cache to avoid hitting MongoDB on every navigation.
+ * Data is revalidated every 30s (stale-while-revalidate pattern).
  */
 import dbConnect from "@/lib/mongodb";
+import { unstable_cache } from "next/cache";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Doc = Record<string, any>;
 
-/** Serialize a MongoDB document (convert _id to string, etc.) */
+/** Serialize a MongoDB document (convert _id to string, dates to ISO) */
 function serialize(doc: Doc): Doc {
   const { _id, ...rest } = doc;
-  return { _id: _id.toString(), ...rest };
+  const serialized: Doc = { _id: _id.toString() };
+  for (const [key, value] of Object.entries(rest)) {
+    if (value instanceof Date) {
+      serialized[key] = value.toISOString();
+    } else if (value && typeof value === "object" && value._bsontype === "ObjectId") {
+      serialized[key] = value.toString();
+    } else {
+      serialized[key] = value;
+    }
+  }
+  return serialized;
 }
 
-// ─── Services ───────────────────────────────────────────────────────────────
+// ─── Raw fetchers (not cached — used by cache wrappers) ─────────────────────
 
-export async function getServices(): Promise<Doc[]> {
+async function _fetchServices(): Promise<Doc[]> {
   const mongoose = await dbConnect();
   const db = mongoose.connection.db;
   if (!db) return [];
@@ -28,9 +39,7 @@ export async function getServices(): Promise<Doc[]> {
   return docs.map(serialize);
 }
 
-// ─── Materials ──────────────────────────────────────────────────────────────
-
-export async function getMaterials(): Promise<Doc[]> {
+async function _fetchMaterials(): Promise<Doc[]> {
   const mongoose = await dbConnect();
   const db = mongoose.connection.db;
   if (!db) return [];
@@ -42,9 +51,7 @@ export async function getMaterials(): Promise<Doc[]> {
   return docs.map(serialize);
 }
 
-// ─── Team ───────────────────────────────────────────────────────────────────
-
-export async function getTeamMembers(): Promise<Doc[]> {
+async function _fetchTeamMembers(): Promise<Doc[]> {
   const mongoose = await dbConnect();
   const db = mongoose.connection.db;
   if (!db) return [];
@@ -56,7 +63,7 @@ export async function getTeamMembers(): Promise<Doc[]> {
   return docs.map(serialize);
 }
 
-export async function getTeamMember(id: string): Promise<Doc | null> {
+async function _fetchTeamMember(id: string): Promise<Doc | null> {
   const { ObjectId } = await import("mongodb");
   const mongoose = await dbConnect();
   const db = mongoose.connection.db;
@@ -67,9 +74,7 @@ export async function getTeamMember(id: string): Promise<Doc | null> {
   return doc ? serialize(doc) : null;
 }
 
-// ─── Jobs ───────────────────────────────────────────────────────────────────
-
-export async function getJobs(): Promise<Doc[]> {
+async function _fetchJobs(): Promise<Doc[]> {
   const mongoose = await dbConnect();
   const db = mongoose.connection.db;
   if (!db) return [];
@@ -80,3 +85,36 @@ export async function getJobs(): Promise<Doc[]> {
     .toArray();
   return docs.map(serialize);
 }
+
+// ─── Cached exports ─────────────────────────────────────────────────────────
+// revalidate: 30 = serve stale data instantly, re-fetch in background every 30s
+
+export const getServices = unstable_cache(
+  _fetchServices,
+  ["services"],
+  { revalidate: 30, tags: ["services"] }
+);
+
+export const getMaterials = unstable_cache(
+  _fetchMaterials,
+  ["materials"],
+  { revalidate: 30, tags: ["materials"] }
+);
+
+export const getTeamMembers = unstable_cache(
+  _fetchTeamMembers,
+  ["team"],
+  { revalidate: 30, tags: ["team"] }
+);
+
+export const getTeamMember = unstable_cache(
+  _fetchTeamMember,
+  ["team-member"],
+  { revalidate: 30, tags: ["team"] }
+);
+
+export const getJobs = unstable_cache(
+  _fetchJobs,
+  ["jobs"],
+  { revalidate: 30, tags: ["jobs"] }
+);
