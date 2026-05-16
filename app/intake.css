@@ -66,6 +66,12 @@
   border-radius: 50%; animation: spin 0.6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.ncb-spinner-inline {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+  vertical-align: middle; margin-right: 4px;
+}
 .ncb-login-footer { font-size: 0.75rem; color: #4b5563; }
 
 /* ── Intake Form Wizard ── */

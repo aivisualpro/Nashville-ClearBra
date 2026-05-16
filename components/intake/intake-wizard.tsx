@@ -32,6 +32,9 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
   const [step, setStep] = useState(1);
   const [data, setData] = useState<IntakeData>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     onStepTitleChange?.(STEP_TITLES[step - 1]);
@@ -55,9 +58,27 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
       const result = await res.json();
       if (res.ok) {
         toast.success("Work Order Submitted", {
-          description: `RO ${data.ro || "—"} has been saved successfully. A PDF will be generated shortly.`,
+          description: `RO ${data.ro || "—"} has been saved successfully.`,
           duration: 6000,
         });
+        setSubmitted(true);
+        // Trigger PDF generation
+        setGeneratingPdf(true);
+        try {
+          const pdfRes = await fetch("/api/intake/pdf", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: result.id, ...data }),
+          });
+          const pdfResult = await pdfRes.json();
+          if (pdfRes.ok && pdfResult.url) {
+            setPdfUrl(pdfResult.url);
+          }
+        } catch {
+          // PDF generation can fail silently — user can retry
+        } finally {
+          setGeneratingPdf(false);
+        }
       } else {
         toast.error("Submission Failed", {
           description: result.error || "Could not save work order. Please try again.",
@@ -130,6 +151,20 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
             <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
               Next →
             </button>
+          ) : submitted ? (
+            generatingPdf ? (
+              <button className="ncb-btn-submit" disabled style={{ minWidth: 120, opacity: 0.7 }}>
+                <span className="ncb-spinner-inline" /> Generating PDF…
+              </button>
+            ) : pdfUrl ? (
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ncb-btn-continue" style={{ minWidth: 120, textDecoration: "none", textAlign: "center" }}>
+                📄 Download PDF
+              </a>
+            ) : (
+              <button className="ncb-btn-continue" onClick={() => { setGeneratingPdf(true); handleSubmit(); }} style={{ minWidth: 120 }}>
+                📄 Generate PDF
+              </button>
+            )
           ) : (
             <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
               {submitting ? "Submitting..." : "Submit →"}
