@@ -90,10 +90,32 @@ export function OptionSelect({
     return lum > 0.6 ? "#1a1a1a" : "#ffffff";
   };
 
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const [dropStyle, setDropStyle] = React.useState<React.CSSProperties>({});
+
+  // Recalculate position when opening
+  React.useEffect(() => {
+    if (open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropUp = spaceBelow < 260;
+      setDropStyle({
+        position: "fixed",
+        left: rect.left,
+        width: Math.max(rect.width, 280),
+        ...(dropUp
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
+        zIndex: 9999,
+      });
+    }
+  }, [open]);
+
   return (
     <div className={`relative ${className}`} ref={ref}>
       {/* Trigger */}
       <button
+        ref={triggerRef}
         type="button"
         className="ncb-select flex items-center gap-2 w-full text-left"
         onClick={() => { setOpen(!open); setSearch(""); }}
@@ -118,8 +140,10 @@ export function OptionSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-full min-w-[280px] bg-popover border rounded-lg shadow-xl overflow-hidden">
-          {/* Search */}
+        <div
+          style={dropStyle}
+          className="bg-popover border rounded-lg shadow-xl overflow-hidden"
+        >          {/* Search */}
           <div className="p-1.5 border-b">
             <input
               type="text"

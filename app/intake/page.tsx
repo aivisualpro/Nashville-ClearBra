@@ -52,12 +52,10 @@ export default function IntakePage() {
       >
         <AppSidebar variant="inset" />
         <SidebarInset>
-          <div className="flex flex-1 flex-col overflow-auto">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <IntakeHeaderAuth title={stepTitle} />
-              <div className="flex flex-col gap-4 py-2 px-4 md:gap-6 md:py-4 lg:px-6">
-                <IntakeWizard onStepTitleChange={setStepTitle} />
-              </div>
+          <div className="flex flex-col h-screen overflow-hidden">
+            <IntakeHeaderAuth title={stepTitle} />
+            <div className="flex-1 min-h-0">
+              <IntakeWizard onStepTitleChange={setStepTitle} />
             </div>
           </div>
         </SidebarInset>
@@ -67,12 +65,10 @@ export default function IntakePage() {
 
   // Public: no sidebar
   return (
-    <div className="flex flex-1 flex-col overflow-auto h-screen">
-      <div className="@container/main flex flex-1 flex-col gap-2">
-        <IntakeHeaderPublic title={stepTitle} />
-        <div className="flex flex-col gap-4 py-2 px-4 md:gap-6 md:py-4 lg:px-6">
-          <IntakeWizard onStepTitleChange={setStepTitle} />
-        </div>
+    <div className="flex flex-col h-screen overflow-hidden">
+      <IntakeHeaderPublic title={stepTitle} />
+      <div className="flex-1 min-h-0">
+        <IntakeWizard onStepTitleChange={setStepTitle} />
       </div>
     </div>
   );

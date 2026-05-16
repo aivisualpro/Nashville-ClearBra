@@ -91,54 +91,58 @@ export function IntakeWizard({ onStepTitleChange }: { onStepTitleChange?: (title
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Sticky progress + nav */}
+      <div className="sticky top-0 z-30 bg-background border-b py-3 px-4 shrink-0">
+        <div className="flex items-center gap-3 justify-center">
+          <button
+            className="ncb-btn-back"
+            onClick={back}
+            disabled={step === 1}
+            style={{ visibility: step === 1 ? "hidden" : "visible", minWidth: 90 }}
+          >
+            ← Previous
+          </button>
 
-      {/* Progress + nav inline */}
-      <div className="flex items-center gap-3 justify-center">
-        <button
-          className="ncb-btn-back"
-          onClick={back}
-          disabled={step === 1}
-          style={{ visibility: step === 1 ? "hidden" : "visible", minWidth: 90 }}
-        >
-          ← Previous
-        </button>
-
-        <div className="ncb-progress" style={{ flex: "0 1 auto" }}>
-          {Array.from({ length: 10 }, (_, i) => {
-            const n = i + 1;
-            return (
-              <div key={n} className="ncb-progress-step">
-                {i > 0 && (
-                  <div className={`ncb-progress-line ${n <= step ? "ncb-progress-line--done" : ""}`} />
-                )}
-                <div
-                  className={`ncb-progress-circle ${
-                    n === step ? "ncb-progress-circle--active" : n < step ? "ncb-progress-circle--done" : ""
-                  }`}
-                  onClick={() => n < step && setStep(n)}
-                  style={{ cursor: n < step ? "pointer" : "default" }}
-                >
-                  {n}
+          <div className="ncb-progress" style={{ flex: "0 1 auto" }}>
+            {Array.from({ length: 10 }, (_, i) => {
+              const n = i + 1;
+              return (
+                <div key={n} className="ncb-progress-step">
+                  {i > 0 && (
+                    <div className={`ncb-progress-line ${n <= step ? "ncb-progress-line--done" : ""}`} />
+                  )}
+                  <div
+                    className={`ncb-progress-circle ${
+                      n === step ? "ncb-progress-circle--active" : n < step ? "ncb-progress-circle--done" : ""
+                    }`}
+                    onClick={() => n < step && setStep(n)}
+                    style={{ cursor: n < step ? "pointer" : "default" }}
+                  >
+                    {n}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {step < 10 ? (
-          <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
-            Next →
-          </button>
-        ) : (
-          <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
-            {submitting ? "Submitting..." : "Submit →"}
-          </button>
-        )}
+          {step < 10 ? (
+            <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
+              Next →
+            </button>
+          ) : (
+            <button className="ncb-btn-submit" onClick={handleSubmit} disabled={submitting} style={{ minWidth: 90 }}>
+              {submitting ? "Submitting..." : "Submit →"}
+            </button>
+          )}
+        </div>
       </div>
 
-      {renderStep()}
-    </>
+      {/* Scrollable step content */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+        {renderStep()}
+      </div>
+    </div>
   );
 }
 
