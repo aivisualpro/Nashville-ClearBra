@@ -6,7 +6,9 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Nashville ClearBra",
@@ -39,9 +41,12 @@ export default async function RootLayout({
           disableTransitionOnChange
           enableColorScheme
         >
-          <ActiveThemeProvider initialTheme={activeThemeValue}>
-            {children}
-          </ActiveThemeProvider>
+          <AuthProvider>
+            <ActiveThemeProvider initialTheme={activeThemeValue}>
+              {children}
+              <Toaster richColors position="top-center" />
+            </ActiveThemeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
