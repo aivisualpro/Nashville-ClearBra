@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import {
   IconDotsVertical,
@@ -34,7 +35,8 @@ export function NavUser() {
   const user = {
     name: session?.user?.name || "User",
     email: session?.user?.email || "",
-    avatar: session?.user?.image || "",
+    role: session?.user?.role || "Team Member",
+    avatar: session?.user?.profileImage || session?.user?.image || "",
   }
 
   const initials = user.name
@@ -60,7 +62,7 @@ export function NavUser() {
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
+                  {user.role}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -87,9 +89,11 @@ export function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IconUserCircle />
-              Account
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/profile">
+                <IconUserCircle />
+                Profile
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

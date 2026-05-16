@@ -23,6 +23,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -82,24 +84,28 @@ function SidebarModeSwitcher() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          tooltip={isDark ? "Light Mode" : "Dark Mode"}
-        >
-          {isDark ? <IconSun className="!size-5" /> : <IconMoon className="!size-5" />}
-          <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              tooltip={isDark ? "Light Mode" : "Dark Mode"}
+            >
+              {isDark ? <IconSun /> : <IconMoon />}
+              <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="group-data-[collapsible=icon]:hidden">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton

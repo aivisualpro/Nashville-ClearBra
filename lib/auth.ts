@@ -2,6 +2,19 @@ import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import dbConnect from "@/lib/mongodb";
 
+// Extend NextAuth session types
+declare module "next-auth" {
+  interface Session {
+    user: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      role?: string;
+      profileImage?: string;
+    };
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -40,6 +53,23 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session }) {
+      // Enrich session with role & profileImage from DB
+      try {
+        const mongoose = await dbConnect();
+        const db = mongoose.connection.db;
+        if (db && session.user?.email) {
+          const dbUser = await db.collection("Nashville_Users").findOne(
+            { email: session.user.email },
+            { projection: { roles: 1, profileImage: 1 } }
+          );
+          if (dbUser) {
+            session.user.role = dbUser.roles || "Team Member";
+            session.user.profileImage = dbUser.profileImage || "";
+          }
+        }
+      } catch (e) {
+        console.error("Session enrichment error:", e);
+      }
       return session;
     },
   },
