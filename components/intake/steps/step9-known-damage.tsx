@@ -17,6 +17,7 @@ export function Step9KnownDamage({ data, update }: Props) {
     update({ [k]: e.target.value });
 
   const pins = (data.damagePins as DamagePin[] | undefined) || [];
+  const bodyStyle = ((data.bodyStyle as "sedan" | "suv" | undefined) ?? "sedan");
 
   return (
     <>
@@ -30,6 +31,8 @@ export function Step9KnownDamage({ data, update }: Props) {
         <CarDamageMarker
           pins={pins}
           onChange={(newPins: DamagePin[]) => update({ damagePins: newPins })}
+          bodyStyle={bodyStyle}
+          onBodyStyleChange={(s) => update({ bodyStyle: s })}
         />
       </div>
 

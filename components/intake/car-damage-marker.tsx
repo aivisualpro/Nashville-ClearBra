@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useMemo, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Html, Edges, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Html, Edges, ContactShadows, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { DamagePin } from "./steps/car-damage-marker-types";
 
@@ -23,11 +23,8 @@ const DAMAGE_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-// ─── Blueprint-style wireframe car (translucent panels + edge lines) ─
-// Each panel is a translucent light-blue volume with crisp edge lines drawn
-// via drei's <Edges>. Glowing cyan headlights and a subtle ground shadow
-// finish the "blueprint / x-ray" look from the reference image.
-const PANEL_FILL = "#bfe1f5";   // very light cyan-blue translucent fill
+// ─── Blueprint look constants ────────────────────────────────────────
+const PANEL_FILL = "#bfe1f5";   // light cyan-blue translucent fill
 const EDGE_COLOR = "#1e5b8e";   // deep blue edge lines
 const GLASS_FILL = "#9ed8f5";
 const WHEEL_RIM = "#9ca3af";
@@ -35,135 +32,161 @@ const TIRE_DARK = "#1f2937";
 const HEAD_GLOW = "#22d3ee";    // cyan headlight glow
 const REAR_GLOW = "#ef4444";
 
-function Panel({
-  position,
-  rotation,
-  size,
-  color = PANEL_FILL,
-  opacity = 0.15,
-  edgeColor = EDGE_COLOR,
-}: {
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  size: [number, number, number];
-  color?: string;
-  opacity?: number;
-  edgeColor?: string;
-}) {
-  return (
-    <mesh position={position} rotation={rotation}>
-      <boxGeometry args={size} />
-      <meshPhysicalMaterial
-        color={color}
-        transparent
-        opacity={opacity}
-        transmission={0.4}
-        roughness={0.15}
-        metalness={0.0}
-        clearcoat={0.4}
-        depthWrite={false}
-      />
-      <Edges threshold={15} color={edgeColor} />
-    </mesh>
-  );
-}
+// Real car models in /public, keyed by body style.
+export type BodyStyle = "sedan" | "suv";
+const USE_GLB = true;
+const MODELS: Record<BodyStyle, string> = {
+  sedan: "/car.glb",
+  suv: "/suv.glb",
+};
 
 function Wheel({ position }: { position: [number, number, number] }) {
   return (
     <group position={position} rotation={[Math.PI / 2, 0, 0]}>
       {/* Tire */}
       <mesh>
-        <cylinderGeometry args={[0.34, 0.34, 0.22, 28]} />
+        <cylinderGeometry args={[0.32, 0.32, 0.22, 32]} />
         <meshPhysicalMaterial
           color={TIRE_DARK}
           transparent
-          opacity={0.18}
+          opacity={0.28}
           roughness={0.6}
           depthWrite={false}
         />
-        <Edges threshold={15} color={EDGE_COLOR} />
+        <Edges threshold={25} color={EDGE_COLOR} />
       </mesh>
       {/* Rim */}
       <mesh>
-        <cylinderGeometry args={[0.18, 0.18, 0.24, 16]} />
+        <cylinderGeometry args={[0.16, 0.16, 0.24, 18]} />
         <meshStandardMaterial color={WHEEL_RIM} metalness={0.2} roughness={0.5} />
+      </mesh>
+      {/* Hub cap */}
+      <mesh>
+        <cylinderGeometry args={[0.04, 0.04, 0.26, 12]} />
+        <meshStandardMaterial color="#1e293b" />
       </mesh>
     </group>
   );
 }
 
-function CarBody() {
+// ─── Curved SUV body (extruded side profile, not boxes) ──────────────
+// We trace the side silhouette as a 2D Shape with quadratic curves for the
+// hood, windshield, roof, hatch, and bumpers, then extrude it across the
+// car's width with a bevel for soft edges. Result is a real car-shaped
+// volume, not a stack of boxes.
+function useSuvGeometry() {
+  return useMemo(() => {
+    const s = new THREE.Shape();
+    // X = car length (negative = front, positive = rear)
+    // Y = height from ground.
+    // ── Trace the upper outline clockwise (front-bottom → over the top → rear-bottom) ──
+    s.moveTo(-2.05, 0.5);                                       // front bumper bottom
+    s.lineTo(-2.05, 0.82);                                      // bumper face
+    s.quadraticCurveTo(-2.02, 1.08, -1.75, 1.15);               // headlight pocket
+    s.quadraticCurveTo(-1.45, 1.22, -1.15, 1.22);               // hood front edge
+    s.lineTo(-0.55, 1.24);                                      // hood top
+    s.quadraticCurveTo(-0.3, 1.28, -0.15, 1.65);                // windshield base
+    s.lineTo(0.08, 1.88);                                       // windshield top
+    s.lineTo(1.15, 1.9);                                        // roof
+    s.lineTo(1.4, 1.82);                                        // roof end (slight slope)
+    s.quadraticCurveTo(1.75, 1.65, 1.9, 1.12);                  // rear hatch glass
+    s.lineTo(2.05, 1.05);                                       // hatch lower
+    s.quadraticCurveTo(2.15, 0.92, 2.1, 0.72);                  // rear bumper top
+    s.lineTo(2.1, 0.5);                                         // rear bumper bottom
+
+    // ── Bottom outline with wheel arches (rear → front, X decreasing) ──
+    // Each arch is a semicircle bulging UP into the body so the wheels tuck under.
+    s.lineTo(1.72, 0.5);                                        // approach rear arch (right side)
+    s.absarc(1.3, 0.5, 0.42, 0, Math.PI, false);                // rear wheel arch ↑
+    s.lineTo(-0.88, 0.5);                                       // floor between axles
+    s.absarc(-1.3, 0.5, 0.42, 0, Math.PI, false);               // front wheel arch ↑
+    s.lineTo(-2.05, 0.5);                                       // close back to start
+
+    const geom = new THREE.ExtrudeGeometry(s, {
+      depth: 1.75,
+      bevelEnabled: true,
+      bevelThickness: 0.1,
+      bevelSize: 0.07,
+      bevelSegments: 4,
+      curveSegments: 32,
+    });
+    geom.translate(0, 0, -0.875);   // center on Z
+    geom.computeVertexNormals();
+    return geom;
+  }, []);
+}
+
+function ProceduralSuv() {
+  const bodyGeom = useSuvGeometry();
+
   return (
     <group>
-      {/* ── Lower chassis ── */}
-      <Panel position={[0, 0.45, 0]} size={[4.2, 0.55, 1.7]} />
+      {/* ── Main body (curved extruded silhouette) ── */}
+      <mesh geometry={bodyGeom}>
+        <meshPhysicalMaterial
+          color={PANEL_FILL}
+          transparent
+          opacity={0.16}
+          transmission={0.55}
+          roughness={0.12}
+          clearcoat={0.6}
+          clearcoatRoughness={0.1}
+          depthWrite={false}
+        />
+        <Edges threshold={20} color={EDGE_COLOR} />
+      </mesh>
 
-      {/* ── Hood (front, slightly raised) ── */}
-      <Panel position={[-1.4, 0.78, 0]} size={[1.4, 0.12, 1.65]} />
+      {/* ── Side window glass overlays (left + right) ── */}
+      {[0.89, -0.89].map((z) => (
+        <mesh key={`sw-${z}`} position={[0.5, 1.55, z]}>
+          <boxGeometry args={[1.6, 0.42, 0.01]} />
+          <meshPhysicalMaterial
+            color={GLASS_FILL}
+            transparent
+            opacity={0.28}
+            transmission={0.6}
+            roughness={0.05}
+            depthWrite={false}
+          />
+          <Edges threshold={15} color={EDGE_COLOR} />
+        </mesh>
+      ))}
 
-      {/* ── Trunk (rear) ── */}
-      <Panel position={[1.55, 0.78, 0]} size={[1.0, 0.12, 1.65]} />
-
-      {/* ── Cabin / roof ── */}
-      <Panel position={[0.1, 1.18, 0]} size={[2.0, 0.55, 1.55]} />
-
-      {/* ── Windshield (front, angled) ── */}
-      <Panel
-        position={[-0.85, 1.05, 0]}
-        rotation={[0, 0, 0.42]}
-        size={[0.06, 0.55, 1.5]}
-        color={GLASS_FILL}
-        opacity={0.22}
-      />
-
-      {/* ── Rear window (angled) ── */}
-      <Panel
-        position={[1.05, 1.05, 0]}
-        rotation={[0, 0, -0.42]}
-        size={[0.06, 0.55, 1.5]}
-        color={GLASS_FILL}
-        opacity={0.22}
-      />
-
-      {/* ── Side windows ── */}
-      <Panel
-        position={[0.1, 1.22, 0.78]}
-        size={[1.85, 0.4, 0.03]}
-        color={GLASS_FILL}
-        opacity={0.22}
-      />
-      <Panel
-        position={[0.1, 1.22, -0.78]}
-        size={[1.85, 0.4, 0.03]}
-        color={GLASS_FILL}
-        opacity={0.22}
-      />
-
-      {/* ── Front bumper ── */}
-      <Panel position={[-2.08, 0.4, 0]} size={[0.18, 0.4, 1.8]} />
-
-      {/* ── Rear bumper ── */}
-      <Panel position={[2.08, 0.4, 0]} size={[0.18, 0.4, 1.8]} />
+      {/* ── Front grille (decorative crosshatch) ── */}
+      <mesh position={[-2.12, 0.95, 0]}>
+        <boxGeometry args={[0.02, 0.28, 0.9]} />
+        <meshStandardMaterial color={EDGE_COLOR} transparent opacity={0.45} />
+        <Edges threshold={15} color={EDGE_COLOR} />
+      </mesh>
 
       {/* ── Side mirrors ── */}
-      <Panel position={[-0.45, 0.95, 0.92]} size={[0.16, 0.12, 0.14]} />
-      <Panel position={[-0.45, 0.95, -0.92]} size={[0.16, 0.12, 0.14]} />
+      {[0.97, -0.97].map((z) => (
+        <mesh key={`m-${z}`} position={[-0.3, 1.32, z]}>
+          <sphereGeometry args={[0.1, 16, 16]} />
+          <meshPhysicalMaterial
+            color={PANEL_FILL}
+            transparent
+            opacity={0.4}
+            transmission={0.3}
+            depthWrite={false}
+          />
+          <Edges threshold={15} color={EDGE_COLOR} />
+        </mesh>
+      ))}
 
       {/* ── Door split lines ── */}
-      <mesh position={[0.15, 0.45, 0.86]}>
-        <boxGeometry args={[0.015, 0.55, 0.015]} />
-        <meshBasicMaterial color={EDGE_COLOR} />
-      </mesh>
-      <mesh position={[0.15, 0.45, -0.86]}>
-        <boxGeometry args={[0.015, 0.55, 0.015]} />
-        <meshBasicMaterial color={EDGE_COLOR} />
-      </mesh>
+      {[0.89, -0.89].map((z) => (
+        <mesh key={`dl-${z}`} position={[0.2, 1.0, z]}>
+          <boxGeometry args={[0.015, 0.7, 0.01]} />
+          <meshBasicMaterial color={EDGE_COLOR} />
+        </mesh>
+      ))}
 
-      {/* ── Headlights (glowing cyan, like reference) ── */}
-      {[0.55, -0.55].map((z) => (
-        <group key={`hl-${z}`} position={[-2.14, 0.55, z]}>
+      {/* ── Headlights ── */}
+      {[0.6, -0.6].map((z) => (
+        <group key={`hl-${z}`} position={[-2.05, 1.05, z]}>
           <mesh>
-            <sphereGeometry args={[0.12, 24, 24]} />
+            <sphereGeometry args={[0.09, 24, 24]} />
             <meshStandardMaterial
               color={HEAD_GLOW}
               emissive={HEAD_GLOW}
@@ -171,13 +194,12 @@ function CarBody() {
               toneMapped={false}
             />
           </mesh>
-          {/* outer halo */}
           <mesh>
-            <sphereGeometry args={[0.17, 24, 24]} />
+            <sphereGeometry args={[0.14, 24, 24]} />
             <meshBasicMaterial
               color={HEAD_GLOW}
               transparent
-              opacity={0.18}
+              opacity={0.16}
               depthWrite={false}
             />
           </mesh>
@@ -185,9 +207,9 @@ function CarBody() {
       ))}
 
       {/* ── Taillights ── */}
-      {[0.55, -0.55].map((z) => (
-        <mesh key={`tl-${z}`} position={[2.14, 0.55, z]}>
-          <boxGeometry args={[0.08, 0.18, 0.32]} />
+      {[0.6, -0.6].map((z) => (
+        <mesh key={`tl-${z}`} position={[2.13, 1.05, z]}>
+          <boxGeometry args={[0.04, 0.16, 0.36]} />
           <meshStandardMaterial
             color={REAR_GLOW}
             emissive={REAR_GLOW}
@@ -197,13 +219,97 @@ function CarBody() {
         </mesh>
       ))}
 
-      {/* ── Wheels ── */}
-      <Wheel position={[-1.25, 0.34, 0.92]} />
-      <Wheel position={[-1.25, 0.34, -0.92]} />
-      <Wheel position={[1.25, 0.34, 0.92]} />
-      <Wheel position={[1.25, 0.34, -0.92]} />
+      {/* ── Wheels (4 — tucked into the new wheel arches) ── */}
+      <Wheel position={[-1.3, 0.32, 0.92]} />
+      <Wheel position={[-1.3, 0.32, -0.92]} />
+      <Wheel position={[1.3, 0.32, 0.92]} />
+      <Wheel position={[1.3, 0.32, -0.92]} />
     </group>
   );
+}
+
+// ─── GLB-loaded car (photorealistic, with blueprint wireframe overlay) ─
+// Loads /public/suv.glb, auto-fits it to ~4.2m length, centers on origin,
+// reskins every mesh with the translucent blueprint material, and adds
+// EdgesGeometry line overlays so the wireframe look from the reference
+// image carries over to the real model.
+function GlbCar({ url }: { url: string }) {
+  const { scene } = useGLTF(url);
+
+  const cloned = useMemo(() => {
+    const copy = scene.clone(true);
+
+    // ── Auto-fit: compute bounding box, scale to ~4.2m length ──
+    const box = new THREE.Box3().setFromObject(copy);
+    const size = box.getSize(new THREE.Vector3());
+    const longest = Math.max(size.x, size.z);
+    if (longest > 0) {
+      const targetLength = 4.2;
+      copy.scale.setScalar(targetLength / longest);
+    }
+    copy.updateMatrixWorld(true);
+
+    // Re-compute box after scaling and recenter on origin (sit on y=0)
+    const box2 = new THREE.Box3().setFromObject(copy);
+    const center = box2.getCenter(new THREE.Vector3());
+    copy.position.x -= center.x;
+    copy.position.z -= center.z;
+    copy.position.y -= box2.min.y;
+
+    // ── Blueprint material + edge overlay on every mesh ──
+    copy.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh && mesh.geometry) {
+        mesh.material = new THREE.MeshPhysicalMaterial({
+          color: PANEL_FILL,
+          transparent: true,
+          opacity: 0.18,
+          transmission: 0.55,
+          roughness: 0.12,
+          clearcoat: 0.5,
+          depthWrite: false,
+        });
+        mesh.castShadow = true;
+
+        // Add a child LineSegments for the wireframe edges.
+        // threshold = 20° — only shows real geometric edges, not coplanar
+        // triangulation lines.
+        const edgeGeom = new THREE.EdgesGeometry(mesh.geometry, 20);
+        const edgeMat = new THREE.LineBasicMaterial({
+          color: EDGE_COLOR,
+          transparent: true,
+          opacity: 0.9,
+        });
+        const lines = new THREE.LineSegments(edgeGeom, edgeMat);
+        // userData flag so the click-handler skips line raycasts
+        lines.userData.isEdgeOverlay = true;
+        lines.raycast = () => {}; // make edges non-interactive
+        mesh.add(lines);
+      }
+    });
+
+    return copy;
+  }, [scene]);
+
+  return <primitive object={cloned} />;
+}
+// Preload both models in parallel (so a toggle switch is instant after first
+// load). Only fires when GLB mode is enabled.
+if (USE_GLB) {
+  useGLTF.preload(MODELS.sedan);
+  useGLTF.preload(MODELS.suv);
+}
+
+function CarBody({ bodyStyle }: { bodyStyle: BodyStyle }) {
+  if (USE_GLB) {
+    return (
+      <Suspense fallback={<ProceduralSuv />}>
+        {/* key forces a remount when switching models so useGLTF re-resolves */}
+        <GlbCar key={bodyStyle} url={MODELS[bodyStyle]} />
+      </Suspense>
+    );
+  }
+  return <ProceduralSuv />;
 }
 
 // ─── Pin marker in 3D space ─────────────────────────────────────────
@@ -262,17 +368,24 @@ function Scene({
   selectedPin,
   onAddPin,
   onSelectPin,
+  bodyStyle,
 }: {
   pins: DamagePin[];
   selectedPin: string | null;
   onAddPin: (pos: [number, number, number], normal: [number, number, number]) => void;
   onSelectPin: (id: string) => void;
+  bodyStyle: BodyStyle;
 }) {
   const { camera } = useThree();
 
   const handleClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e: any) => {
+      // ── Drag guard ──
+      // r3f exposes `delta` = pixels the pointer moved between pointerdown
+      // and pointerup. If the user was orbiting (any meaningful movement),
+      // this is NOT a click — bail out so we don't drop a stray pin.
+      if (typeof e.delta === "number" && e.delta > 4) return;
       // Don't add pin if clicking on existing pin
       if (e.object?.userData?.isPin) return;
       e.stopPropagation();
@@ -298,7 +411,7 @@ function Scene({
       <directionalLight position={[-6, 5, -4]} intensity={0.45} />
 
       <group onClick={handleClick}>
-        <CarBody />
+        <CarBody bodyStyle={bodyStyle} />
       </group>
 
       {pins.map((pin) => (
@@ -313,9 +426,9 @@ function Scene({
       <OrbitControls
         makeDefault
         enablePan={false}
-        minDistance={3}
-        maxDistance={10}
-        target={[0, 0.6, 0]}
+        minDistance={3.5}
+        maxDistance={11}
+        target={[0, 1.1, 0]}
       />
 
       {/* Soft circular contact shadow under the car (no dark ground plane) */}
@@ -336,10 +449,24 @@ function Scene({
 interface CarDamageMarkerProps {
   pins: DamagePin[];
   onChange: (pins: DamagePin[]) => void;
+  bodyStyle?: BodyStyle;
+  onBodyStyleChange?: (s: BodyStyle) => void;
 }
 
-export default function CarDamageMarker({ pins, onChange }: CarDamageMarkerProps) {
+export default function CarDamageMarker({
+  pins,
+  onChange,
+  bodyStyle: bodyStyleProp,
+  onBodyStyleChange,
+}: CarDamageMarkerProps) {
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
+  // Local state used only when no controlled prop is provided (standalone use)
+  const [localBodyStyle, setLocalBodyStyle] = useState<BodyStyle>(bodyStyleProp ?? "sedan");
+  const bodyStyle: BodyStyle = bodyStyleProp ?? localBodyStyle;
+  const setBodyStyle = (s: BodyStyle) => {
+    if (onBodyStyleChange) onBodyStyleChange(s);
+    else setLocalBodyStyle(s);
+  };
 
   const addPin = useCallback(
     (pos: [number, number, number], normal: [number, number, number]) => {
@@ -382,7 +509,7 @@ export default function CarDamageMarker({ pins, onChange }: CarDamageMarkerProps
       >
         <Canvas
           shadows
-          camera={{ position: [-5.5, 3.5, 4.5], fov: 38 }}
+          camera={{ position: [-6, 3.8, 5], fov: 36 }}
           gl={{ antialias: true, alpha: true }}
           style={{ width: "100%", height: "100%", minHeight: 400, background: "transparent" }}
         >
@@ -391,8 +518,53 @@ export default function CarDamageMarker({ pins, onChange }: CarDamageMarkerProps
             selectedPin={selectedPin}
             onAddPin={addPin}
             onSelectPin={setSelectedPin}
+            bodyStyle={bodyStyle}
           />
         </Canvas>
+
+        {/* ── Body-style toggle (top-right of viewer) ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            display: "flex",
+            gap: 4,
+            padding: 4,
+            background: "rgba(255,255,255,0.9)",
+            backdropFilter: "blur(4px)",
+            border: "1px solid #d9e4ee",
+            borderRadius: 8,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+          }}
+        >
+          {(["sedan", "suv"] as const).map((s) => {
+            const active = bodyStyle === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setBodyStyle(s)}
+                style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  padding: "5px 12px",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  background: active ? "#1e5b8e" : "transparent",
+                  color: active ? "#fff" : "#1e3a5f",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.4,
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {s === "sedan" ? "Sedan" : "SUV"}
+              </button>
+            );
+          })}
+        </div>
+
         <div
           style={{
             position: "absolute",
