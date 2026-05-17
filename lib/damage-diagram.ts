@@ -183,10 +183,8 @@ function drawPin(
   num: number,
   color: string
 ) {
-  // Pins are scaled up because the base image is ~2748px wide — small
-  // dots would be invisible in a downscaled PDF render.
-  const R_HALO = 28;
-  const R_DISC = 22;
+  const R_HALO = 56;
+  const R_DISC = 44;
 
   ctx.save();
   // Outer translucent halo for legibility on any background (black or white)
@@ -200,13 +198,13 @@ function drawPin(
   ctx.arc(x, y, R_DISC, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 5;
   ctx.strokeStyle = "#ffffff";
   ctx.stroke();
 
   // Number label
   ctx.fillStyle = "#0f172a";
-  ctx.font = "bold 24px system-ui, -apple-system, sans-serif";
+  ctx.font = "bold 42px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(String(num), x, y + 1);

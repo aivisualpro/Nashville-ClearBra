@@ -173,7 +173,8 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
     <div className="flex flex-col h-full min-h-0">
       {/* Sticky progress + nav */}
       <div className="sticky top-0 z-30 bg-background border-b py-3 px-4 shrink-0">
-        <div className="flex items-center gap-3 justify-center">
+        <div className="flex items-center gap-3">
+          {/* Left: Previous */}
           <button
             className="ncb-btn-back"
             onClick={back}
@@ -183,7 +184,8 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
             ← Previous
           </button>
 
-          <div className="ncb-progress" style={{ flex: "0 1 auto" }}>
+          {/* Center: Step circles */}
+          <div className="ncb-progress" style={{ flex: "1 1 auto", justifyContent: "center" }}>
             {Array.from({ length: 10 }, (_, i) => {
               const n = i + 1;
               return (
@@ -205,28 +207,17 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
             })}
           </div>
 
-          <div className="flex items-center gap-2" style={{ minWidth: 200, justifyContent: "flex-end" }}>
-            {/* Read-only toggle for edit mode */}
-            {isEditMode && readOnly && (
-              <button
-                className="ncb-btn-continue"
-                onClick={() => { setReadOnly(false); setSubmitted(false); }}
-                style={{ minWidth: 90 }}
-              >
-                <Pencil className="size-3.5" /> Edit
-              </button>
-            )}
-
-            {/* Navigation / Submit */}
+          {/* Next / Save Changes */}
+          <div style={{ minWidth: 90 }}>
             {step < 10 ? (
               <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
                 Next →
               </button>
-            ) : !readOnly && (
+            ) : !readOnly ? (
               submitted ? (
                 generatingPdf ? (
                   <button className="ncb-btn-submit" disabled style={{ minWidth: 120, opacity: 0.7 }}>
-                    <span className="ncb-spinner-inline" /> Generating PDF…
+                    <span className="ncb-spinner-inline" /> Saving…
                   </button>
                 ) : pdfUrl ? (
                   <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ncb-btn-continue" style={{ minWidth: 120, textDecoration: "none", textAlign: "center" }}>
@@ -242,8 +233,55 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
                   {submitting ? "Saving..." : isEditMode ? "Save Changes →" : "Submit →"}
                 </button>
               )
+            ) : (
+              <div style={{ minWidth: 90 }} />
             )}
           </div>
+
+          {/* Right: Action icons (PDF + Edit) */}
+          {isEditMode && (
+            <div className="flex items-center gap-2" style={{ marginLeft: "auto" }}>
+              {/* PDF icon */}
+              <button
+                type="button"
+                title={data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? "View PDF" : "PDF not available"}
+                className="ncb-action-btn"
+                style={{
+                  width: 36, height: 36, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "1.5px solid #d1d5db", background: "#fff",
+                  opacity: data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? 1 : 0.4,
+                  cursor: data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? "pointer" : "default",
+                }}
+                onClick={() => {
+                  const url = data?.jobOrderPdf as string | undefined;
+                  if (url && url !== "generating") {
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+                    window.open(viewerUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+              >
+                <FileText className="size-4" style={{ color: "#E77000" }} />
+              </button>
+
+              {/* Edit icon */}
+              {readOnly && (
+                <button
+                  type="button"
+                  title="Edit this work order"
+                  style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    border: "1.5px solid #E77000", background: "#E77000",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => { setReadOnly(false); setSubmitted(false); }}
+                >
+                  <Pencil className="size-4" style={{ color: "#fff" }} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -259,7 +297,7 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
       )}
 
       {/* Scrollable step content */}
-      <div className={`flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 ${readOnly ? "pointer-events-none opacity-80" : ""}`}>
+      <div className={`flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-6 ${readOnly ? "opacity-80 select-none" : ""}`} style={readOnly ? { pointerEvents: "auto" } : undefined}>
         {renderStep()}
       </div>
     </div>
