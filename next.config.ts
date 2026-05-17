@@ -31,7 +31,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://*.googleusercontent.com https://logo.clearbit.com",
       "font-src 'self' data:",
       "connect-src 'self' https://api.cloudinary.com",
       "frame-ancestors 'none'",

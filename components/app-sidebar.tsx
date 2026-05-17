@@ -5,6 +5,7 @@ import Image from "next/image";
 import { APP_VERSION } from "@/lib/version";
 import {
   IconBriefcase,
+  IconCar,
   IconDashboard,
   IconFileDescription,
   IconMoon,
@@ -70,11 +71,16 @@ const data = {
       url: "/options",
       icon: IconSettings2,
     },
+    {
+      title: "Vehicles",
+      url: "/vehicles",
+      icon: IconCar,
+    },
   ],
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: IconSettings,
     },
   ],

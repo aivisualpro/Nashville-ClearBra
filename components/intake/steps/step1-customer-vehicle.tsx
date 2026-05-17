@@ -2,6 +2,8 @@
 import * as React from "react";
 import { IntakeData } from "../intake-wizard";
 import { OptionSelect } from "@/components/ui/option-select";
+import { UserSelect } from "@/components/ui/user-select";
+import { VehicleCascade } from "@/components/ui/vehicle-cascade";
 import { ClipboardList, User, Car } from "lucide-react";
 
 const VEHICLE_YEARS = ["2027","2026","2025","2024","2023","2022","2021","2020","2019","2018","2017","2016","2015","2014","2013","2012","2011","2010","2009","2008","2007","2006","2005","2004","2003","2002","2001","2000","1999","1998","1997","1996","1995","1994","1993","1992","1991","1990","1989","1988","1987","1986","1985","1984","1983","1982","1981","1980","1979","1978","1977","1976","1975","1974","1973","1972","1971","1970"];
@@ -179,29 +181,15 @@ export function Step1CustomerVehicle({ data, update }: Props) {
             <label className="ncb-label">Year</label>
             <YearCombobox value={v("vYear")} onChange={(val) => update({ vYear: val })} />
           </div>
-          <div className="ncb-field">
-            <label className="ncb-label">Make</label>
-            <OptionSelect
-              optionSetName="Vehicle Make"
-              value={v("vMakeId")}
-              onSelect={(opt) => {
-                if (opt) {
-                  update({ vMakeId: opt._id, vMake: opt.value });
-                } else {
-                  update({ vMakeId: "", vMake: "" });
-                }
-              }}
-              placeholder="Select make…"
-            />
-          </div>
-          <div className="ncb-field">
-            <label className="ncb-label">Model</label>
-            <input className="ncb-input" placeholder="Model Y" value={v("vModel")} onChange={set("vModel")} />
-          </div>
-          <div className="ncb-field">
-            <label className="ncb-label">Submodel</label>
-            <input className="ncb-input" placeholder="Long Range AWD" value={v("vSubmodel")} onChange={set("vSubmodel")} />
-          </div>
+          <VehicleCascade
+            makeId={v("vMakeId")}
+            makeName={v("vMake")}
+            modelId={v("vModelId")}
+            modelName={v("vModel")}
+            subModelId={v("vSubmodelId")}
+            subModelName={v("vSubmodel")}
+            onUpdate={update}
+          />
         </div>
         <div className="ncb-form-grid ncb-form-grid--3" style={{ marginTop: "1rem" }}>
           <div className="ncb-field">
@@ -239,47 +227,44 @@ export function Step1CustomerVehicle({ data, update }: Props) {
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Intake Staff</label>
-            <OptionSelect
-              optionSetName="Intake Staff"
+            <UserSelect
               value={v("intakeStaffId")}
-              onSelect={(opt) => {
-                if (opt) {
-                  update({ intakeStaffId: opt._id, intakeStaff: opt.value });
+              onSelect={(user) => {
+                if (user) {
+                  update({ intakeStaffId: user._id, intakeStaff: user.name });
                 } else {
                   update({ intakeStaffId: "", intakeStaff: "" });
                 }
               }}
-              placeholder="Select…"
+              placeholder="Select staff…"
             />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">Installer</label>
-            <OptionSelect
-              optionSetName="Installer"
+            <UserSelect
               value={v("installerId")}
-              onSelect={(opt) => {
-                if (opt) {
-                  update({ installerId: opt._id, installer: opt.value });
+              onSelect={(user) => {
+                if (user) {
+                  update({ installerId: user._id, installer: user.name });
                 } else {
                   update({ installerId: "", installer: "" });
                 }
               }}
-              placeholder="Select…"
+              placeholder="Select installer…"
             />
           </div>
           <div className="ncb-field">
             <label className="ncb-label">IST</label>
-            <OptionSelect
-              optionSetName="IST"
+            <UserSelect
               value={v("istId")}
-              onSelect={(opt) => {
-                if (opt) {
-                  update({ istId: opt._id, ist: opt.value });
+              onSelect={(user) => {
+                if (user) {
+                  update({ istId: user._id, ist: user.name });
                 } else {
                   update({ istId: "", ist: "" });
                 }
               }}
-              placeholder="Select…"
+              placeholder="Select IST…"
             />
           </div>
         </div>

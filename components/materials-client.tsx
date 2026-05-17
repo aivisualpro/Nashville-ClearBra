@@ -5,7 +5,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DataTable, buildColumnsFromData } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -28,16 +27,21 @@ const MATERIAL_FIELDS: readonly {
   options?: string[];
   span2?: boolean;
 }[] = [
-  { key: "materialName", label: "Material Name", type: "text", required: true },
   { key: "sku", label: "SKU", type: "text" },
-  { key: "category", label: "Category", type: "text" },
-  { key: "brand", label: "Brand", type: "text" },
+  { key: "materialName", label: "Material Name", type: "text", required: true },
   { key: "description", label: "Description", type: "text", span2: true },
-  { key: "unit", label: "Unit", type: "text" },
+  { key: "variant", label: "Variant", type: "text" },
+  { key: "manufacturer", label: "Manufacturer", type: "text" },
+  { key: "widthInches", label: "Width (in)", type: "number" },
+  { key: "lengthFeet", label: "Length (ft)", type: "number" },
+  { key: "unitOfMeasure", label: "Unit of Measure", type: "text" },
+  { key: "quantity", label: "Quantity", type: "number" },
+  { key: "materialCost", label: "Material Cost", type: "number" },
   { key: "unitCost", label: "Unit Cost", type: "number" },
-  { key: "unitPrice", label: "Unit Price", type: "number" },
-  { key: "supplier", label: "Supplier", type: "text" },
+  { key: "masterItem", label: "Master Item", type: "text" },
+  { key: "masterGroup", label: "Master Group", type: "text" },
   { key: "status", label: "Status", type: "select", options: ["Active", "Inactive"] },
+  { key: "materialType", label: "Material Type", type: "text" },
 ];
 
 type MaterialRecord = Record<string, unknown>;
@@ -70,7 +74,9 @@ export function MaterialsClient({ initialData }: { initialData: MaterialRecord[]
 
   const columns = React.useMemo(
     () => buildColumnsFromData(data, {
-      currencyFields: ["unitCost", "unitPrice"],
+      columnOrder: MATERIAL_FIELDS.map((f) => f.key),
+      currencyFields: ["materialCost", "unitCost"],
+      excludeFields: ["category", "brand", "unit", "unitPrice", "supplier"],
     }),
     [data]
   );
@@ -186,7 +192,7 @@ export function MaterialsClient({ initialData }: { initialData: MaterialRecord[]
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2 max-h-[60vh] overflow-auto pr-1">
       {MATERIAL_FIELDS.map((mf) => (
         <div key={mf.key} className={`flex flex-col gap-1.5 ${mf.span2 ? "sm:col-span-2" : ""}`}>
-          <Label className="text-xs">{mf.label}{mf.required ? " *" : ""}</Label>
+          <label className="text-xs font-medium">{mf.label}{mf.required ? " *" : ""}</label>
           {mf.type === "select" && mf.options ? (
             <Select value={form[mf.key] || "Active"} onValueChange={(v) => setForm((f) => ({ ...f, [mf.key]: v }))} disabled={disabled}>
               <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -210,7 +216,7 @@ export function MaterialsClient({ initialData }: { initialData: MaterialRecord[]
     </div>
   );
 
-  const currencyKeys = new Set(["unitCost", "unitPrice"]);
+  const currencyKeys = new Set(["materialCost", "unitCost"]);
   const formatVal = (key: string, val: unknown) => {
     if (val == null || val === "") return "—";
     if (currencyKeys.has(key)) return `$${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

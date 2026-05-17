@@ -147,3 +147,23 @@ export const getOptions = unstable_cache(
   ["options"],
   { revalidate: 30, tags: ["options"] }
 );
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+
+async function _fetchSettings(): Promise<Doc[]> {
+  const mongoose = await dbConnect();
+  const db = mongoose.connection.db;
+  if (!db) return [];
+  const docs = await db
+    .collection("Nashville_Settings")
+    .find({})
+    .sort({ order: 1 })
+    .toArray();
+  return docs.map(serialize);
+}
+
+export const getSettings = unstable_cache(
+  _fetchSettings,
+  ["settings"],
+  { revalidate: 30, tags: ["settings"] }
+);

@@ -692,6 +692,7 @@ export function buildColumnsFromData(
     columnOrder?: string[];
     avatarField?: string;
     currencyFields?: string[];
+    excludeFields?: string[];
   }
 ): DataTableColumn[] {
   if (data.length === 0) return [];
@@ -699,6 +700,7 @@ export function buildColumnsFromData(
   data.forEach((row) => Object.keys(row).forEach((k) => keySet.add(k)));
   keySet.delete("_id");
   if (opts?.avatarField) keySet.delete(opts.avatarField);
+  if (opts?.excludeFields) opts.excludeFields.forEach((k) => keySet.delete(k));
 
   const currencySet = new Set(opts?.currencyFields || []);
 

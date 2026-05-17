@@ -25,10 +25,8 @@ export async function GET(
     const doc = await db.collection("Nashville_Jobs").findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!doc) return NextResponse.json({ success: false, message: "Job not found" }, { status: 404 });
 
-    return NextResponse.json({
-      success: true,
-      data: { ...doc, _id: doc._id.toString() },
-    });
+    const raw: Record<string, any> = { ...doc, _id: doc._id.toString() };
+    return NextResponse.json({ success: true, data: raw });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ success: false, message: msg }, { status: 500 });
@@ -85,6 +83,14 @@ export async function PUT(
         });
       }
     }
+
+    // Strip vehicle *Id fields — only name strings are stored
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { vMakeId: _mk, vModelId: _md, vSubmodelId: _sm, ...cleanData } = updateData;
+    Object.assign(updateData, cleanData);
+    delete updateData.vMakeId;
+    delete updateData.vModelId;
+    delete updateData.vSubmodelId;
 
     // Update the document — mark PDF as regenerating
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

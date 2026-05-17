@@ -19,9 +19,12 @@ export async function POST(req: NextRequest) {
 
     const collection = db.collection("Nashville_Jobs");
 
-    // Add metadata
+    // Strip the *Id fields — only the denormalized name strings are stored
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { vMakeId: _mk, vModelId: _md, vSubmodelId: _sm, ...rest } = body;
+
     const record = {
-      ...body,
+      ...rest,
       createdAt: new Date(),
       updatedAt: new Date(),
       status: "New",

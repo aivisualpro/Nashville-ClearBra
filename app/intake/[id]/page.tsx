@@ -30,6 +30,15 @@ function IntakeHeaderPublic({ title }: { title: string }) {
   );
 }
 
+/** Centered loading / error content */
+function CenteredMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[60vh]">
+      {children}
+    </div>
+  );
+}
+
 export default function IntakeJobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: session, status } = useSession();
@@ -60,37 +69,38 @@ export default function IntakeJobPage({ params }: { params: Promise<{ id: string
     fetchJob();
   }, [id]);
 
+  // Build the inner content based on loading/error/loaded state
+  let innerContent: React.ReactNode;
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+    innerContent = (
+      <CenteredMessage>
         <div className="flex flex-col items-center gap-3">
           <div className="ncb-spinner" />
           <span className="text-sm text-muted-foreground">Loading work order…</span>
         </div>
-      </div>
+      </CenteredMessage>
     );
-  }
-
-  if (error || !jobData) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+  } else if (error || !jobData) {
+    innerContent = (
+      <CenteredMessage>
         <div className="text-center">
           <div style={{ fontSize: "2rem", marginBottom: 8 }}>⚠️</div>
           <div className="text-sm text-muted-foreground">{error || "Job not found"}</div>
         </div>
-      </div>
+      </CenteredMessage>
+    );
+  } else {
+    innerContent = (
+      <IntakeWizard
+        onStepTitleChange={setStepTitle}
+        initialData={jobData}
+        jobId={id}
+        readOnly={mode !== "edit"}
+      />
     );
   }
 
-  const wizardContent = (
-    <IntakeWizard
-      onStepTitleChange={setStepTitle}
-      initialData={jobData}
-      jobId={id}
-      readOnly={mode !== "edit"}
-    />
-  );
-
+  // Authenticated layout — always render the sidebar shell
   if (isAuth) {
     return (
       <SidebarProvider
@@ -101,7 +111,7 @@ export default function IntakeJobPage({ params }: { params: Promise<{ id: string
           <div className="intake-layout flex flex-col h-full overflow-hidden">
             <IntakeHeaderAuth title={stepTitle} />
             <div className="flex-1 min-h-0">
-              {wizardContent}
+              {innerContent}
             </div>
           </div>
         </SidebarInset>
@@ -109,12 +119,14 @@ export default function IntakeJobPage({ params }: { params: Promise<{ id: string
     );
   }
 
+  // Public layout
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <IntakeHeaderPublic title={stepTitle} />
       <div className="flex-1 min-h-0">
-        {wizardContent}
+        {innerContent}
       </div>
     </div>
   );
 }
+
