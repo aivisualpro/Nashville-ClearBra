@@ -1,5 +1,5 @@
 /** App version — bump this with each release. */
-export const APP_VERSION = "0.89";
+export const APP_VERSION = "0.91";
 
 /**
  * Build hash — set automatically by Vercel at build time.

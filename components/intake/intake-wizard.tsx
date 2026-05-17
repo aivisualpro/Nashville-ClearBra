@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Pencil, FileText, Download, Lock } from "lucide-react";
+import { Pencil, FileText, Download, Lock, Loader2 } from "lucide-react";
 import { Step1CustomerVehicle } from "./steps/step1-customer-vehicle";
 import { Step2ServiceSelection } from "./steps/step2-service-selection";
 import { Step3PPF } from "./steps/step3-ppf";
@@ -52,6 +52,35 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
   useEffect(() => {
     onStepTitleChange?.(STEP_TITLES[step - 1]);
   }, [step, onStepTitleChange]);
+
+  // Poll for PDF status after save
+  const pdfStatus = data.jobOrderPdf as string | undefined;
+  const isPdfGenerating = pdfStatus === "generating";
+  const hasPdf = !!pdfStatus && pdfStatus !== "generating";
+  const pollRef = useRef(false);
+
+  useEffect(() => {
+    if (!isPdfGenerating || !jobId) return;
+    pollRef.current = true;
+    let count = 0;
+    const interval = setInterval(async () => {
+      count++;
+      if (count > 20 || !pollRef.current) { clearInterval(interval); return; }
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        const json = await res.json();
+        if (json.success && json.data) {
+          const url = json.data.jobOrderPdf;
+          if (url && url !== "generating") {
+            setData((prev) => ({ ...prev, jobOrderPdf: url }));
+            clearInterval(interval);
+          }
+        }
+      } catch { /* ignore */ }
+    }, 4000);
+    return () => { pollRef.current = false; clearInterval(interval); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPdfGenerating, jobId]);
 
   const update = (fields: Record<string, unknown>) => {
     if (readOnly) return; // block updates in read-only
@@ -114,6 +143,8 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
           duration: 6000,
         });
         setSubmitted(true);
+        // Set jobOrderPdf to "generating" so the PDF icon starts polling
+        setData((prev) => ({ ...prev, ...submitData, jobOrderPdf: "generating" }));
         if (isEditMode) {
           setReadOnly(true);
         }
@@ -241,28 +272,33 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
           {/* Right: Action icons (PDF + Edit) */}
           {isEditMode && (
             <div className="flex items-center gap-2" style={{ marginLeft: "auto" }}>
-              {/* PDF icon */}
+              {/* PDF icon — only in view mode, spinner while generating */}
+              {readOnly && (
               <button
                 type="button"
-                title={data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? "View PDF" : "PDF not available"}
+                title={isPdfGenerating ? "Generating PDF…" : hasPdf ? "View PDF" : "PDF not available"}
                 className="ncb-action-btn"
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  border: "1.5px solid #d1d5db", background: "#fff",
-                  opacity: data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? 1 : 0.4,
-                  cursor: data?.jobOrderPdf && data.jobOrderPdf !== "generating" ? "pointer" : "default",
+                  border: `1.5px solid ${isPdfGenerating ? "#E77000" : "#d1d5db"}`,
+                  background: "#fff",
+                  opacity: isPdfGenerating || hasPdf ? 1 : 0.4,
+                  cursor: hasPdf ? "pointer" : "default",
                 }}
                 onClick={() => {
-                  const url = data?.jobOrderPdf as string | undefined;
-                  if (url && url !== "generating") {
-                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+                  if (hasPdf) {
+                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfStatus!)}&embedded=true`;
                     window.open(viewerUrl, "_blank", "noopener,noreferrer");
                   }
                 }}
               >
-                <FileText className="size-4" style={{ color: "#E77000" }} />
+                {isPdfGenerating
+                  ? <Loader2 className="size-4 animate-spin" style={{ color: "#E77000" }} />
+                  : <FileText className="size-4" style={{ color: "#E77000" }} />
+                }
               </button>
+              )}
 
               {/* Edit icon */}
               {readOnly && (
