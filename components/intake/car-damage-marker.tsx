@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo, Suspense } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useState, useCallback, useMemo, Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Html, Edges, ContactShadows, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import type { DamagePin } from "./steps/car-damage-marker-types";
@@ -312,7 +312,7 @@ function CarBody({ bodyStyle }: { bodyStyle: BodyStyle }) {
   return <ProceduralSuv />;
 }
 
-// ─── Pin marker in 3D space ─────────────────────────────────────────
+// ─── Pin marker in 3D space (flat numbered badge only) ──────────────
 function PinMarker({
   pin,
   isSelected,
@@ -322,40 +322,45 @@ function PinMarker({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const meshRef = useRef<THREE.Mesh>(null);
   const color = SEVERITY_COLORS[pin.severity] || "#facc15";
-
-  useFrame(({ clock }) => {
-    if (meshRef.current && isSelected) {
-      meshRef.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 4) * 0.15);
-    } else if (meshRef.current) {
-      meshRef.current.scale.setScalar(1);
-    }
-  });
+  const label = pin.id.replace("pin-", "");
 
   return (
     <group position={pin.position}>
-      <mesh ref={meshRef} onClick={(e) => { e.stopPropagation(); onClick(); }}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={isSelected ? 0.6 : 0.3} />
-      </mesh>
-      {/* Pin stem */}
-      <mesh position={[0, -0.12, 0]}>
-        <cylinderGeometry args={[0.015, 0.015, 0.15, 8]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      {/* Number label */}
-      <Html position={[0, 0.18, 0]} center style={{ pointerEvents: "none" }}>
-        <div style={{
-          background: color,
-          color: "#fff",
-          width: 20, height: 20,
-          borderRadius: "50%",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, fontWeight: 700,
-          boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
-        }}>
-          {pin.id.replace("pin-", "")}
+      {/* HTML badge — sits at the exact 3D click point, always faces camera,
+          stays the same screen size regardless of zoom. */}
+      <Html
+        center
+        zIndexRange={[100, 0]}
+        style={{ pointerEvents: "none", userSelect: "none" }}
+      >
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+          style={{
+            pointerEvents: "auto",
+            cursor: "pointer",
+            background: color,
+            color: "#1B2A4A",
+            width: isSelected ? 28 : 24,
+            height: isSelected ? 28 : 24,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: isSelected ? 13 : 12,
+            fontWeight: 700,
+            border: "2px solid #ffffff",
+            boxShadow: isSelected
+              ? "0 0 0 3px rgba(30,91,142,0.45), 0 2px 6px rgba(0,0,0,0.35)"
+              : "0 1px 4px rgba(0,0,0,0.35)",
+            transition: "width 0.12s, height 0.12s, font-size 0.12s",
+          }}
+        >
+          {label}
         </div>
       </Html>
     </group>
@@ -376,8 +381,6 @@ function Scene({
   onSelectPin: (id: string) => void;
   bodyStyle: BodyStyle;
 }) {
-  const { camera } = useThree();
-
   const handleClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e: any) => {

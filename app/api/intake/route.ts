@@ -33,9 +33,15 @@ export async function POST(req: NextRequest) {
     const jobId = result.insertedId.toString();
 
     // Generate PDF in background (don't block the response)
-    generateAndStorePdf(body, jobId, collection).catch((err) =>
-      console.error("[PDF Background] Failed:", err.message)
-    );
+    generateAndStorePdf(body, jobId, collection).catch(async (err) => {
+      console.error("[PDF Background] Failed:", err.message);
+      try {
+        await collection.updateOne(
+          { _id: new mongoose.Types.ObjectId(jobId) },
+          { $set: { jobOrderPdf: "" } }
+        );
+      } catch { /* ignore */ }
+    });
 
     return NextResponse.json({
       success: true,
@@ -59,7 +65,12 @@ async function generateAndStorePdf(data: Record<string, any>, jobId: string, col
   const pdfBuffer = await processTemplate(
     TEMPLATE_ID,
     `T_${Date.now()}`,
-    replacements
+    replacements,
+    // Image placeholders — match by Alt-text Title in the doc template.
+    // Set the placeholder image's Alt-text title to "damage_diagram".
+    data.damageDiagramUrl
+      ? { damage_diagram: String(data.damageDiagramUrl) }
+      : undefined
   );
 
   const pdfUrl = await uploadPdfToCloudinary(pdfBuffer, `NCB-${ro}-${jobId}`);

@@ -130,6 +130,107 @@ async function batchReplace(token: string, docId: string, replacements: Record<s
   }
 }
 
+/**
+ * Fetch the doc and walk its body to find every inline image whose
+ * Alt-text TITLE or DESCRIPTION matches one of the requested keys.
+ * Returns a map of { altText → inlineObjectId }.
+ *
+ * Google Docs exposes two alt-text fields on an image:
+ *   - Title       (set via right-click → Alt text → Title field)
+ *   - Description (set via the "Alt text" sidebar panel — the one that
+ *                  says "Accessed by screen readers…")
+ * We accept either, because the sidebar panel only edits Description and
+ * many users will never find the Title modal.
+ */
+async function findImagesByAltTitle(
+  token: string,
+  docId: string,
+  wantedTitles: string[]
+): Promise<Record<string, string>> {
+  if (wantedTitles.length === 0) return {};
+
+  const res = await fetch(
+    `https://docs.googleapis.com/v1/documents/${docId}?fields=inlineObjects`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Get document failed: ${res.status} ${text}`);
+  }
+
+  const doc = await res.json();
+  const inlineObjects = (doc.inlineObjects || {}) as Record<
+    string,
+    { inlineObjectProperties?: { embeddedObject?: { title?: string; description?: string } } }
+  >;
+
+  const wantedSet = new Set(wantedTitles.map((t) => t.toLowerCase()));
+  const found: Record<string, string> = {};
+
+  for (const [objectId, obj] of Object.entries(inlineObjects)) {
+    const embedded = obj.inlineObjectProperties?.embeddedObject;
+    const title = embedded?.title?.trim().toLowerCase();
+    const description = embedded?.description?.trim().toLowerCase();
+
+    // Either field matches → record under that key.
+    if (title && wantedSet.has(title)) {
+      found[title] = objectId;
+      continue;
+    }
+    if (description && wantedSet.has(description)) {
+      found[description] = objectId;
+    }
+  }
+
+  return found;
+}
+
+/**
+ * Replace every placeholder image (identified by its Alt-text title)
+ * with the URL provided in `imageReplacements`. Silently skips any
+ * titles that don't exist in the document.
+ */
+async function batchReplaceImages(
+  token: string,
+  docId: string,
+  imageReplacements: Record<string, string>
+): Promise<void> {
+  const titles = Object.keys(imageReplacements).filter((k) => !!imageReplacements[k]);
+  if (titles.length === 0) return;
+
+  const titleToObjectId = await findImagesByAltTitle(token, docId, titles);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requests: any[] = [];
+  for (const title of titles) {
+    const objectId = titleToObjectId[title.toLowerCase()];
+    if (!objectId) continue; // template doesn't include this placeholder
+    requests.push({
+      replaceImage: {
+        imageObjectId: objectId,
+        uri: imageReplacements[title],
+        imageReplaceMethod: "CENTER_CROP",
+      },
+    });
+  }
+  if (requests.length === 0) return;
+
+  const res = await fetch(`https://docs.googleapis.com/v1/documents/${docId}:batchUpdate`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ requests }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Image replace failed: ${res.status} ${text}`);
+  }
+}
+
 async function exportPdf(token: string, docId: string): Promise<Buffer> {
   const res = await fetch(
     `https://www.googleapis.com/drive/v3/files/${docId}/export?mimeType=application/pdf`,
@@ -158,12 +259,21 @@ async function deleteTemp(token: string, fileId: string): Promise<void> {
 
 /**
  * Process a Google Docs template: copy → replace placeholders → export PDF → cleanup.
- * Uses a single auth token for the entire pipeline (3 API calls instead of 5+).
+ * Uses a single auth token for the entire pipeline.
+ *
+ * @param replacements        Text placeholders to swap, keyed without the `{{}}`.
+ * @param imageReplacements   Optional. Maps an image's Alt-text TITLE → image URL.
+ *                            For each title, the corresponding inline image in the
+ *                            template is replaced (CENTER_INSIDE) with the URL.
+ *                            Use this for the damage diagram: set the placeholder
+ *                            image's Alt-text title to "damage_diagram" and pass
+ *                            { damage_diagram: data.damageDiagramUrl }.
  */
 export async function processTemplate(
   templateId: string,
   title: string,
-  replacements: Record<string, string>
+  replacements: Record<string, string>,
+  imageReplacements?: Record<string, string>
 ): Promise<Buffer> {
   const token = await getAccessToken();
   let tempDocId: string | null = null;
@@ -175,10 +285,15 @@ export async function processTemplate(
     // 2. Replace all {{placeholders}} in one batch call
     await batchReplace(token, tempDocId, replacements);
 
-    // 3. Export as PDF
+    // 3. Replace any placeholder images by Alt-text title (no-op if none)
+    if (imageReplacements && Object.keys(imageReplacements).length > 0) {
+      await batchReplaceImages(token, tempDocId, imageReplacements);
+    }
+
+    // 4. Export as PDF
     return await exportPdf(token, tempDocId);
   } finally {
-    // 4. Always clean up the temporary doc (fire-and-forget)
+    // 5. Always clean up the temporary doc (fire-and-forget)
     if (tempDocId) {
       deleteTemp(token, tempDocId).catch(() => {});
     }

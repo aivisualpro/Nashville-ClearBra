@@ -17,35 +17,51 @@ export function JobsClient({ initialData }: { initialData: JobRecord[] }) {
   const [logOpen, setLogOpen] = React.useState(false);
   const [activeLogs, setActiveLogs] = React.useState<Array<{ userId: string | null; timestamp: string; field: string; from: unknown; to: unknown }>>([]);
   const [activeRo, setActiveRo] = React.useState("");
-  // Sync when navigating back with fresh SSR data
+  // Always fetch fresh data on mount (SSR cache can be stale)
   React.useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
+    let cancelled = false;
+    fetch("/api/jobs")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!cancelled && json.success && json.data) setData(json.data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
-  // Auto-poll for jobs with "generating" PDF status
-  const generatingRef = React.useRef(false);
+  // Auto-poll while any job has "generating" PDF status
+  const pdfStatusKey = data.map((r) => r.jobOrderPdf || "").join(",");
   React.useEffect(() => {
-    generatingRef.current = data.some((row) => row.jobOrderPdf === "generating");
-  }, [data]);
+    const hasGenerating = data.some((row) => row.jobOrderPdf === "generating");
+    if (!hasGenerating) return;
 
-  React.useEffect(() => {
-    if (!generatingRef.current) return;
+    let pollCount = 0;
+    const maxPolls = 15; // stop after ~60 seconds
 
     const interval = setInterval(async () => {
+      pollCount++;
+      if (pollCount > maxPolls) {
+        clearInterval(interval);
+        // Force refresh to clear stale "generating" states
+        const res = await fetch("/api/jobs");
+        const json = await res.json();
+        if (json.success && json.data) setData(json.data);
+        return;
+      }
       try {
         const res = await fetch("/api/jobs");
         const json = await res.json();
         if (json.success && json.data) {
           setData(json.data);
-          const stillGenerating = json.data.some((r: JobRecord) => r.jobOrderPdf === "generating");
-          if (!stillGenerating) clearInterval(interval);
+          const still = json.data.some((r: JobRecord) => r.jobOrderPdf === "generating");
+          if (!still) clearInterval(interval);
         }
       } catch { /* ignore */ }
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]);
+  }, [pdfStatusKey]);
 
   // Fixed column definitions for Jobs table
   const fixedCols: DataTableColumn<JobRecord>[] = React.useMemo(() => [

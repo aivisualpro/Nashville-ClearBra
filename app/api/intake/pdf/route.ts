@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
     const pdfBuffer = await processTemplate(
       TEMPLATE_ID,
       `T_${Date.now()}`,
-      replacements
+      replacements,
+      data.damageDiagramUrl
+        ? { damage_diagram: String(data.damageDiagramUrl) }
+        : undefined
     );
 
     const pdfUrl = await uploadPdfToCloudinary(pdfBuffer, `NCB-${ro}-${jobId || Date.now()}`);

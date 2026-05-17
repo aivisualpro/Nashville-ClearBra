@@ -64,26 +64,59 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // Auto-generate damage diagram if there are pins
+      const pins = (data.damagePins as Array<{ id: string }> | undefined) || [];
+      let submitData = { ...data };
+      if (pins.length > 0) {
+        try {
+          const subtitle = [
+            String(data.clientName || ""),
+            [data.vYear, data.vMake, data.vModel].filter(Boolean).join(" "),
+            data.ro ? `RO ${data.ro}` : "",
+          ].filter(Boolean).join(" · ");
+
+          const { generateDamageDiagram } = await import("@/lib/damage-diagram");
+          const blob = await generateDamageDiagram({
+            pins: data.damagePins as any,
+            bodyStyle: (data.bodyStyle as "sedan" | "suv") || "sedan",
+            subtitle,
+          });
+
+          const formData = new FormData();
+          formData.append("file", new File([blob], `damage-${data.ro || Date.now()}.png`, { type: "image/png" }));
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+          const uploadJson = await uploadRes.json();
+          if (uploadJson.success && uploadJson.url) {
+            submitData = {
+              ...submitData,
+              damageDiagramUrl: uploadJson.url,
+              damageDiagramGeneratedAt: new Date().toISOString(),
+            };
+          }
+        } catch (err) {
+          console.warn("[Damage Diagram] Failed to auto-generate:", err);
+          // Continue with save — diagram is optional
+        }
+      }
+
       const url = isEditMode ? `/api/jobs/${jobId}` : "/api/intake";
       const method = isEditMode ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submitData),
       });
       const result = await res.json();
       if (res.ok) {
         toast.success(isEditMode ? "Work Order Updated" : "Work Order Submitted", {
-          description: `RO ${data.ro || "—"} has been saved successfully.${result.changes ? ` ${result.changes} field(s) updated.` : ""}`,
+          description: `RO ${data.ro || "—"} has been saved successfully.${result.changes ? ` ${result.changes} field(s) updated.` : ""} PDF is being generated...`,
           duration: 6000,
         });
         setSubmitted(true);
         if (isEditMode) {
-          setReadOnly(true); // go back to read-only after save
+          setReadOnly(true);
         }
-        // Auto-trigger PDF generation after submit
-        generatePdf();
       } else {
         toast.error("Submission Failed", {
           description: result.error || result.message || "Could not save work order. Please try again.",

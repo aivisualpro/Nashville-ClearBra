@@ -127,6 +127,10 @@ export function buildReplacements(data: JobData): Record<string, string> {
     // Damage
     damageNotes: s("damageNotes"),
     damageInitials: s("damageInitials"),
+    bodyStyle: s("bodyStyle"),
+    damageCount: String(((data.damagePins as unknown[] | undefined) || []).length),
+    damageDiagramUrl: s("damageDiagramUrl"),
+    damageDiagramGeneratedAt: s("damageDiagramGeneratedAt"),
 
     // Signature
     sigName: s("sigName"),

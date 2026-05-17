@@ -101,9 +101,16 @@ export async function PUT(
 
     // Regenerate PDF in background (don't block the response)
     const fullData = { ...currentDoc, ...updateData };
-    regeneratePdf(fullData, id, collection).catch((err) =>
-      console.error("[PDF Background] Failed:", err.message)
-    );
+    regeneratePdf(fullData, id, collection).catch(async (err) => {
+      console.error("[PDF Background] Failed:", err.message);
+      // Reset so spinner doesn't spin forever
+      try {
+        await collection.updateOne(
+          { _id: new mongoose.Types.ObjectId(id) },
+          { $set: { jobOrderPdf: "" } }
+        );
+      } catch { /* ignore */ }
+    });
 
     return NextResponse.json({ success: true, changes: newLogs.length });
   } catch (error: unknown) {
@@ -120,7 +127,10 @@ async function regeneratePdf(data: Record<string, any>, jobId: string, collectio
   const pdfBuffer = await processTemplate(
     TEMPLATE_ID,
     `T_${Date.now()}`,
-    replacements
+    replacements,
+    data.damageDiagramUrl
+      ? { damage_diagram: String(data.damageDiagramUrl) }
+      : undefined
   );
 
   const pdfUrl = await uploadPdfToCloudinary(pdfBuffer, `NCB-${ro}-${jobId}`);

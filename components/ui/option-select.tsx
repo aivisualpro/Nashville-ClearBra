@@ -10,6 +10,41 @@ export type OptionEntry = {
   icon: string;
 };
 
+// ─── Module-level cache: fetch once, share across all instances ──────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _optionsCache: Record<string, OptionEntry[]> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _optionsPromise: Promise<Record<string, OptionEntry[]>> | null = null;
+
+async function fetchAllOptions(): Promise<Record<string, OptionEntry[]>> {
+  if (_optionsCache) return _optionsCache;
+  if (_optionsPromise) return _optionsPromise;
+
+  _optionsPromise = fetch("/api/options")
+    .then((res) => res.json())
+    .then((json) => {
+      const map: Record<string, OptionEntry[]> = {};
+      if (json.success && json.data) {
+        for (const set of json.data) {
+          map[set.name] = (set.options || []).map((o: OptionEntry) => ({
+            _id: o._id?.toString() || "",
+            value: o.value || "",
+            color: o.color || "",
+            icon: o.icon || "",
+          }));
+        }
+      }
+      _optionsCache = map;
+      return map;
+    })
+    .catch(() => {
+      _optionsPromise = null; // allow retry on failure
+      return {} as Record<string, OptionEntry[]>;
+    });
+
+  return _optionsPromise;
+}
+
 type Props = {
   /** The name of the option set in Nashville_Options (e.g. "Lead Source") */
   optionSetName: string;
@@ -28,37 +63,22 @@ export function OptionSelect({
   placeholder = "Select…",
   className = "",
 }: Props) {
-  const [options, setOptions] = React.useState<OptionEntry[]>([]);
+  const [options, setOptions] = React.useState<OptionEntry[]>(() => {
+    // Instant hydration from cache if available
+    return _optionsCache?.[optionSetName] || [];
+  });
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const ref = React.useRef<HTMLDivElement>(null);
 
-  // Fetch options from API
+  // Fetch options from shared cache
   React.useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/options");
-        const json = await res.json();
-        if (!cancelled && json.success) {
-          const set = json.data.find(
-            (d: { name: string }) => d.name === optionSetName
-          );
-          if (set?.options) {
-            setOptions(
-              set.options.map((o: OptionEntry) => ({
-                _id: o._id?.toString() || "",
-                value: o.value || "",
-                color: o.color || "",
-                icon: o.icon || "",
-              }))
-            );
-          }
-        }
-      } catch {
-        /* silently fail */
+    fetchAllOptions().then((map) => {
+      if (!cancelled && map[optionSetName]) {
+        setOptions(map[optionSetName]);
       }
-    })();
+    });
     return () => { cancelled = true; };
   }, [optionSetName]);
 
