@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: docs
-        .map((d) => ({ _id: d._id.toString(), name: d.vehicleMake || "" }))
+        .map((d) => ({ _id: d._id.toString(), name: d.vehicleMake || "", logo: d.logo || "" }))
         .filter((d) => d.name),
     });
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, FileText, Download, Lock, Loader2 } from "lucide-react";
+import { Undo2, Pencil, FileText, Download, Lock, Loader2 } from "lucide-react";
 import { Step1CustomerVehicle } from "./steps/step1-customer-vehicle";
 import { Step2ServiceSelection } from "./steps/step2-service-selection";
 import { Step3PPF } from "./steps/step3-ppf";
@@ -40,6 +41,7 @@ interface IntakeWizardProps {
 }
 
 export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: initialReadOnly = false }: IntakeWizardProps) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [data, setData] = useState<IntakeData>(initialData || {});
   const [submitting, setSubmitting] = useState(false);
@@ -205,7 +207,24 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
       {/* Sticky progress + nav */}
       <div className="sticky top-0 z-30 bg-background border-b py-3 px-4 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Left: Previous */}
+          {/* Far left: Back to Jobs */}
+          <button
+            onClick={() => router.push("/jobs")}
+            style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "none", border: "none", cursor: "pointer",
+              color: "#64748b", fontSize: "0.78rem", fontWeight: 600,
+              padding: "0.3rem 0.5rem", borderRadius: 6, flexShrink: 0,
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#1e293b")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
+          >
+            <Undo2 style={{ width: 13, height: 13 }} />
+            Back
+          </button>
+
+          {/* Previous */}
           <button
             className="ncb-btn-back"
             onClick={back}
@@ -239,11 +258,23 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
           </div>
 
           {/* Next / Save Changes */}
-          <div style={{ minWidth: 90 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 90 }}>
             {step < 10 ? (
-              <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
-                Next →
-              </button>
+              <>
+                <button className="ncb-btn-continue" onClick={next} style={{ minWidth: 90 }}>
+                  Next →
+                </button>
+                {isEditMode && !readOnly && (
+                  <button
+                    className="ncb-btn-submit"
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    style={{ minWidth: 80, fontSize: "0.78rem" }}
+                  >
+                    {submitting ? "Saving…" : "Save"}
+                  </button>
+                )}
+              </>
             ) : !readOnly ? (
               submitted ? (
                 generatingPdf ? (
@@ -288,8 +319,7 @@ export function IntakeWizard({ onStepTitleChange, initialData, jobId, readOnly: 
                 }}
                 onClick={() => {
                   if (hasPdf) {
-                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfStatus!)}&embedded=true`;
-                    window.open(viewerUrl, "_blank", "noopener,noreferrer");
+                    window.open(pdfStatus!, "_blank", "noopener,noreferrer");
                   }
                 }}
               >

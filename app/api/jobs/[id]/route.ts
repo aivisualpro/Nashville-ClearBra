@@ -26,6 +26,10 @@ export async function GET(
     if (!doc) return NextResponse.json({ success: false, message: "Job not found" }, { status: 404 });
 
     const raw: Record<string, any> = { ...doc, _id: doc._id.toString() };
+    // Stringify ObjectId reference fields for the client
+    if (raw.vMakeId) raw.vMakeId = raw.vMakeId.toString();
+    if (raw.vModelId) raw.vModelId = raw.vModelId.toString();
+    if (raw.vSubmodelId) raw.vSubmodelId = raw.vSubmodelId.toString();
     return NextResponse.json({ success: true, data: raw });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Unknown error";
@@ -84,13 +88,16 @@ export async function PUT(
       }
     }
 
-    // Strip vehicle *Id fields — only name strings are stored
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { vMakeId: _mk, vModelId: _md, vSubmodelId: _sm, ...cleanData } = updateData;
-    Object.assign(updateData, cleanData);
-    delete updateData.vMakeId;
-    delete updateData.vModelId;
-    delete updateData.vSubmodelId;
+    // Convert vehicle reference fields to ObjectId
+    if (updateData.vMakeId && typeof updateData.vMakeId === "string" && updateData.vMakeId.length === 24) {
+      updateData.vMakeId = new mongoose.Types.ObjectId(updateData.vMakeId);
+    }
+    if (updateData.vModelId && typeof updateData.vModelId === "string" && updateData.vModelId.length === 24) {
+      updateData.vModelId = new mongoose.Types.ObjectId(updateData.vModelId);
+    }
+    if (updateData.vSubmodelId && typeof updateData.vSubmodelId === "string" && updateData.vSubmodelId.length === 24) {
+      updateData.vSubmodelId = new mongoose.Types.ObjectId(updateData.vSubmodelId);
+    }
 
     // Update the document — mark PDF as regenerating
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

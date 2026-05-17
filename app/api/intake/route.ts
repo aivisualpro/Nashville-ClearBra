@@ -19,18 +19,24 @@ export async function POST(req: NextRequest) {
 
     const collection = db.collection("Nashville_Jobs");
 
-    // Strip the *Id fields — only the denormalized name strings are stored
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { vMakeId: _mk, vModelId: _md, vSubmodelId: _sm, ...rest } = body;
-
-    const record = {
-      ...rest,
+    // Convert vehicle reference fields to ObjectId
+    const record: Record<string, unknown> = {
+      ...body,
       createdAt: new Date(),
       updatedAt: new Date(),
       status: "New",
       source: "Intake Form",
       jobOrderPdf: "generating",
     };
+    if (record.vMakeId && typeof record.vMakeId === "string" && record.vMakeId.length === 24) {
+      record.vMakeId = new mongoose.Types.ObjectId(record.vMakeId as string);
+    }
+    if (record.vModelId && typeof record.vModelId === "string" && record.vModelId.length === 24) {
+      record.vModelId = new mongoose.Types.ObjectId(record.vModelId as string);
+    }
+    if (record.vSubmodelId && typeof record.vSubmodelId === "string" && record.vSubmodelId.length === 24) {
+      record.vSubmodelId = new mongoose.Types.ObjectId(record.vSubmodelId as string);
+    }
 
     const result = await collection.insertOne(record);
     const jobId = result.insertedId.toString();

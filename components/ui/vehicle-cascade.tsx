@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 
-type VehicleOption = { _id: string; name: string };
+type VehicleOption = { _id: string; name: string; logo?: string };
 
 // ── Module-level cache for makes (only fetched once) ──────────────────
 let _makesCache: VehicleOption[] | null = null;
@@ -66,22 +66,24 @@ function VehicleDropdown({
   const [rect, setRect] = React.useState<DOMRect | null>(null);
   const DROPDOWN_HEIGHT = 264; // max-height + padding
 
-  // Close on outside click
+  // Close on outside click — use 'click' (not mousedown) to avoid
+  // closing the portal before option onClick fires
   React.useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent | TouchEvent) => {
+    const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      // Check if click is inside the trigger or the portal dropdown
       if (ref.current?.contains(target)) return;
       const portal = document.getElementById(`vcascade-portal-${label}`);
       if (portal?.contains(target)) return;
       setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("touchstart", handler);
+    // Delay listener registration so the opening click doesn't immediately close
+    const raf = requestAnimationFrame(() => {
+      document.addEventListener("click", handler);
+    });
     return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("touchstart", handler);
+      cancelAnimationFrame(raf);
+      document.removeEventListener("click", handler);
     };
   }, [open, label]);
 
@@ -210,7 +212,10 @@ function VehicleDropdown({
               e.currentTarget.style.background = opt._id === value ? "#fff7ed" : "transparent";
             }}
           >
-            <span style={{ color: opt._id === value ? "#c2410c" : "#111827" }}>{opt.name}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, color: opt._id === value ? "#c2410c" : "#111827" }}>
+              {opt.logo && <img src={opt.logo} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />}
+              {opt.name}
+            </span>
             {opt._id === value && <span style={{ color: "#E77000" }}>✓</span>}
           </button>
         ))}
@@ -253,8 +258,13 @@ function VehicleDropdown({
             opacity: disabled ? 0.5 : 1,
           }}
         >
-          <span style={{ fontSize: "0.85rem", color: selected ? "#1f2937" : "#9ca3af" }}>
-            {loading ? "Loading…" : selected ? selected.name : placeholder}
+          <span style={{ fontSize: "0.85rem", color: selected ? "#1f2937" : "#9ca3af", display: "flex", alignItems: "center", gap: 8 }}>
+            {loading ? "Loading…" : selected ? (
+              <>
+                {selected.logo && <img src={selected.logo} alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />}
+                {selected.name}
+              </>
+            ) : placeholder}
           </span>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, opacity: 0.5 }}>
             <path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
